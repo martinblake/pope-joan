@@ -8,7 +8,6 @@ A Pope Joan board viewer for keeping track of scores.
 ## Priority 0
 
 * Matrimony / Intrique automatically fill in Jack, Queen, King
-* Order must be Jack -> Intrigue -> Queen -> Matrimony -> King
 * Split into phases with clear outlines of relevant widgets
 * Keep track of who is dressing
 

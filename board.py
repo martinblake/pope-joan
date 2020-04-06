@@ -75,12 +75,12 @@ class Board(QFrame):
         self.segments = (
             self.game,
             Segment(self, "Ace", 1, players),
-            Segment(self, "King", 1, players),
-            Segment(self, "Queen", 1, players),
             Segment(self, "Jack", 1, players),
-            Segment(self, "9 Diamonds", 6, players),
+            Segment(self, "Intrigue", 2, players),
+            Segment(self, "Queen", 1, players),
             Segment(self, "Matrimony", 2, players),
-            Segment(self, "Intrigue", 2, players)
+            Segment(self, "King", 1, players),
+            Segment(self, "9 Diamonds", 6, players),
         )
         for i, seg in enumerate(self.segments):
             theta = 2 * np.pi * (i + 0.5) / len(self.segments)
