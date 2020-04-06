@@ -20,6 +20,7 @@ A Pope Joan board viewer for keeping track of scores.
 
 ## Priority 2
 
+* Enable loans
 * Coins move around screen
 * Motion sensitive movement of tokens
 

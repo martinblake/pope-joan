@@ -1,11 +1,18 @@
+"""Entry point for the application."""
 import argparse
 import sys
-from functools import partial
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
+from PyQt5.QtWidgets import (
+    QApplication,
+    QGraphicsView,
+    QGridLayout,
+    QMainWindow,
+    QPushButton,
+    QWidget,
+)
 
 from board import Board
-from player import Player
+from player import PlayerPanel
 
 
 def parse_args():
@@ -17,38 +24,44 @@ def parse_args():
 
 
 class Window(QMainWindow):
-    """Manage all components at a high level."""
+    """The application window."""
 
-    WIDTH = 1000  # Total window width
-    HEIGHT = 640  # Total window height
-    RADIUS = 320  # Board radius
+    def __init__(self, players):
+        """Initialise the window."""
+        super().__init__()
+        self.setWindowTitle("Pope Joan")
+        self.setCentralWidget(GameView(players))
+        self.show()
+
+
+class GameView(QWidget):
+    """Top level view for game activity."""
+
+    RADIUS = 300  # Board radius
 
     def __init__(self, players):
         """Initialise widgets."""
         super().__init__()
-        self.setWindowTitle("Pope Joan")
-        self.setGeometry(0, 0, self.WIDTH, self.HEIGHT)
+        layout = QGridLayout()
 
         # Add board view
-        self.q_board = Board(self,
-                             self.RADIUS, self.HEIGHT / 2,
-                             self.RADIUS,
-                             players)
+        self.q_board = Board(self.RADIUS, players)
+        board_view = QGraphicsView(self.q_board)
+        board_view.setMinimumWidth(self.RADIUS * 2.1)
+        board_view.setMinimumHeight(self.RADIUS * 2.1)
+        layout.addWidget(board_view, 0, 0, 2, 1)
 
-        # Add a view for each player
-        self.q_players = {}
-        for i, name in enumerate(players):
-            player = Player(self, name, partial(self.dress, name))
-            player.move(2 * self.RADIUS + (self.WIDTH - 2 * self.RADIUS) / 2,
-                        self.HEIGHT * (i + 0.5) / len(players))
-            self.q_players[name] = player
+        # Add a panel showing details for each player
+        player_panel = PlayerPanel(players, self.dress)
+        self.q_players = player_panel.q_players
+        layout.addWidget(player_panel, 0, 1)
 
         # Add a button for completing the round
-        self.q_end_round = QPushButton("End Round", self)
-        self.q_end_round.move(2 * self.RADIUS - 50, 2 * self.RADIUS - 50)
+        self.q_end_round = QPushButton("End Round")
         self.q_end_round.clicked.connect(self.end_round)
+        layout.addWidget(self.q_end_round, 1, 1)
 
-        self.show()
+        self.setLayout(layout)
 
     def dress(self, player_name):
         """Dress the board using counters from the named player."""

@@ -1,19 +1,31 @@
 import numpy as np
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPainter, QPen, QFont
-from PyQt5.QtWidgets import QGroupBox, QGridLayout, QLabel, QFrame, QComboBox
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (
+    QComboBox,
+    QGraphicsScene,
+    QGroupBox,
+    QGridLayout,
+    QLabel,
+)
 
 
 class Segment(QGroupBox):
+    """A single segment of the board."""
 
     @staticmethod
     def _label(text, font=QFont.Normal):
+        """Return a label with consistent formatting."""
         label = QLabel(text)
         label.setFont(QFont('SansSerif', 8, font))
         return label
 
-    def __init__(self, parent, name, dress_value, players):
-        super().__init__(name, parent)
+    def __init__(self, name, dress_value, players):
+        """
+        Initialise with name, amount required to dress and a full list of
+        players.
+        """
+        super().__init__(name)
         self.setFont(QFont('SansSerif', 10, QFont.Bold))
         self.setAlignment(Qt.AlignCenter)
         self.dress_value = dress_value
@@ -33,6 +45,10 @@ class Segment(QGroupBox):
         self.setLayout(grid)
 
     def move(self, x, y):
+        """
+        Adjust the 'move' method such that widget is centred at the
+        requested location.
+        """
         w = self.rect().width()
         h = self.rect().height()
         super().move(x - w / 2, y - h / 2)
@@ -44,10 +60,12 @@ class Segment(QGroupBox):
 
     @property
     def counters(self):
+        """Get the number of counters."""
         return self.__counters
 
     @counters.setter
     def counters(self, val):
+        """Set the number of counters."""
         self.__counters = val
         self.q_counters.setText(str(self.__counters))
         self.update()
@@ -64,41 +82,42 @@ class Segment(QGroupBox):
         return payout
 
 
-class Board(QFrame):
+class Board(QGraphicsScene):
+    """Representation of the state of the board."""
 
-    def __init__(self, parent, x0, y0, radius, players):
-        super().__init__(parent)
+    def __init__(self, radius, players):
+        """Initialise the board."""
+        super().__init__()
         self.radius = radius
-        self.setGeometry(x0 - radius, y0 - radius, radius * 2, radius * 2)
+        self.addEllipse(0, 0, 2 * self.radius, 2 * self.radius)
 
-        self.game = Segment(self, "Game", 1, players)
+        self.game = Segment("Game", 1, players)
         self.segments = (
             self.game,
-            Segment(self, "Ace", 1, players),
-            Segment(self, "Jack", 1, players),
-            Segment(self, "Intrigue", 2, players),
-            Segment(self, "Queen", 1, players),
-            Segment(self, "Matrimony", 2, players),
-            Segment(self, "King", 1, players),
-            Segment(self, "9 Diamonds", 6, players),
+            Segment("Ace", 1, players),
+            Segment("Jack", 1, players),
+            Segment("Intrigue", 2, players),
+            Segment("Queen", 1, players),
+            Segment("Matrimony", 2, players),
+            Segment("King", 1, players),
+            Segment("9 Diamonds", 6, players),
         )
-        for i, seg in enumerate(self.segments):
-            theta = 2 * np.pi * (i + 0.5) / len(self.segments)
-            x = self.radius + 0.7 * self.radius * np.cos(theta)
-            y = self.radius + 0.7 * self.radius * np.sin(theta)
-            seg.move(x, y)
 
-    def paintEvent(self, event):
-        """Draw the board shape."""
-        painter = QPainter(self)
-        painter.setPen(QPen(Qt.black, 3, Qt.SolidLine))
-        painter.drawEllipse(0, 0, 2 * self.radius, 2 * self.radius)
+        # Draw the board segment boundaries
         x0 = y0 = self.radius
         for i, seg in enumerate(self.segments):
             theta = 2 * np.pi * i / len(self.segments)
             x1 = x0 + self.radius * np.cos(theta)
             y1 = y0 + self.radius * np.sin(theta)
-            painter.drawLine(x0, y0, x1, y1)
+            self.addLine(x0, y0, x1, y1)
+
+        # Add widgets for each segment
+        for i, seg in enumerate(self.segments):
+            self.addWidget(seg)
+            theta = 2 * np.pi * (i + 0.5) / len(self.segments)
+            x = self.radius + 0.7 * self.radius * np.cos(theta)
+            y = self.radius + 0.7 * self.radius * np.sin(theta)
+            seg.move(x, y)
 
     def dress(self):
         """Dress the board and return the cost."""
@@ -106,4 +125,5 @@ class Board(QFrame):
 
     @property
     def dress_value(self):
+        """Return the full cost of dressing the board."""
         return sum([seg.dress_value for seg in self.segments])

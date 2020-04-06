@@ -1,3 +1,5 @@
+from functools import partial
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
@@ -6,6 +8,8 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -17,9 +21,9 @@ class Player(QGroupBox):
         label.setFont(QFont('SansSerif', 8, font))
         return label
 
-    def __init__(self, parent, name, dress_cb):
-        super().__init__(name, parent)
-        self.setGeometry(0, 0, 150, 130)
+    def __init__(self, name, dress_cb):
+        super().__init__(name)
+        self.setMaximumHeight(130)
         self.setFont(QFont('SansSerif', 10, QFont.Bold))
         self.setAlignment(Qt.AlignCenter)
 
@@ -34,16 +38,11 @@ class Player(QGroupBox):
 
         self.q_dress = QPushButton("Dress")
         self.q_dress.clicked.connect(dress_cb)
-        grid.addWidget(self.q_dress, 2, 0)
+        grid.addWidget(self.q_dress, 2, 0, 1, 2)
 
         self.counters = 50
 
         self.setLayout(grid)
-
-    def move(self, x, y):
-        w = self.rect().width()
-        h = self.rect().height()
-        super().move(x - w / 2, y - h / 2)
 
     @property
     def counters(self):
@@ -58,3 +57,18 @@ class Player(QGroupBox):
     @property
     def cards(self):
         return int(self.q_cards.toPlainText())
+
+
+class PlayerPanel(QWidget):
+
+    def __init__(self, players, dress_cb):
+        super().__init__()
+        layout = QVBoxLayout()
+
+        self.q_players = {}
+        for i, name in enumerate(players):
+            player = Player(name, partial(dress_cb, name))
+            self.q_players[name] = player
+            layout.addWidget(player)
+
+        self.setLayout(layout)
