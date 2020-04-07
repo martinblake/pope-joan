@@ -1,5 +1,6 @@
 """Management of the board display."""
 import numpy as np
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
@@ -38,6 +39,7 @@ class Segment(QGroupBox):
 
         self.q_counters = self._label("", font=QFont.Bold)
         self.q_player = QComboBox()
+        self.q_player.setFont(QFont('SansSerif', 8, QFont.Normal))
         self.q_player.addItems([None, *players])
         grid.addWidget(self.q_counters, 0, 1)
         grid.addWidget(self.q_player, 1, 1)
@@ -54,6 +56,14 @@ class Segment(QGroupBox):
         w = self.rect().width()
         h = self.rect().height()
         super().move(x - w / 2, y - h / 2)
+
+    def enable(self):
+        """Enable all input widgets."""
+        self.q_player.setEnabled(True)
+
+    def disable(self):
+        """Disable all input widgets."""
+        self.q_player.setEnabled(False)
 
     def dress(self):
         """Dress the segment and return the cost."""
@@ -98,15 +108,19 @@ class Segment(QGroupBox):
 class Board(QGraphicsView):
     """Representation of the state of the board."""
 
-    RADIUS = 300
+    RADIUS = 270
 
-    def __init__(self, players):
-        """Initialise the board."""
+    def __init__(self, players, game_winner_cb):
+        """
+        Initialise the board.
+        :param players:  A list of the players
+        :param game_winner_cb:  Function to call when a game winner is selected
+        """
         scene = QGraphicsScene()
         super().__init__(scene)
 
-        self.setMinimumWidth(self.RADIUS * 2.1)
-        self.setMinimumHeight(self.RADIUS * 2.1)
+        self.setMinimumWidth(self.RADIUS * 2.2)
+        self.setMinimumHeight(self.RADIUS * 2.2)
 
         scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
 
@@ -123,8 +137,15 @@ class Board(QGraphicsView):
 
         q_intrigue.automatically_populates(q_jack, q_queen)
         q_matrimony.automatically_populates(q_queen, q_king)
+        self.q_game.q_player.currentIndexChanged.connect(
+            lambda: game_winner_cb(self.q_game.q_player.currentText())
+        )
 
-        # Draw the board segment boundaries
+        self._draw_segment_boundaries(scene)
+        self._add_segment_widgets(scene)
+
+    def _draw_segment_boundaries(self, scene):
+        """Draw the boundaries between adjacent segments."""
         x0 = y0 = self.RADIUS
         for i, seg in enumerate(self.q_segments):
             theta = 2 * np.pi * i / len(self.q_segments)
@@ -132,13 +153,24 @@ class Board(QGraphicsView):
             y1 = y0 + self.RADIUS * np.sin(theta)
             scene.addLine(x0, y0, x1, y1)
 
-        # Add widgets for each segment
+    def _add_segment_widgets(self, scene):
+        """Add widgets for each segment."""
         for i, seg in enumerate(self.q_segments):
             scene.addWidget(seg)
             theta = 2 * np.pi * (i + 0.5) / len(self.q_segments)
             x = self.RADIUS + 0.7 * self.RADIUS * np.cos(theta)
             y = self.RADIUS + 0.7 * self.RADIUS * np.sin(theta)
             seg.move(x, y)
+
+    def enable(self):
+        """Enable all input widgets."""
+        for segment in self.q_segments:
+            segment.enable()
+
+    def disable(self):
+        """Disable all input widgets."""
+        for segment in self.q_segments:
+            segment.disable()
 
     def dress(self):
         """Dress the board and return the cost."""

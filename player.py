@@ -42,12 +42,36 @@ class Player(QGroupBox):
         grid.addWidget(self.q_cards, 1, 1)
 
         self.q_dress = QPushButton("Dress")
+        self.q_dress.setFont(QFont('SansSerif', 8, QFont.Normal))
         self.q_dress.clicked.connect(dress_cb)
         grid.addWidget(self.q_dress, 2, 0, 1, 2)
 
         self.counters = 50
 
         self.setLayout(grid)
+
+    def setColor(self, color):
+        """Set the color palette."""
+        pal = self.palette()
+        pal.setColor(self.backgroundRole(), color)
+        self.setPalette(pal)
+
+    def enable_dressing(self):
+        """Enable dressing only."""
+        self.q_dress.setEnabled(True)
+        self.q_cards.setEnabled(False)
+        self.setColor(Qt.green)
+
+    def enable_scoring(self):
+        """Enable scoring only."""
+        self.q_dress.setEnabled(False)
+        self.q_cards.setEnabled(True)
+
+    def disable(self):
+        """Disable all inputs."""
+        self.q_dress.setEnabled(False)
+        self.q_cards.setEnabled(False)
+        self.setColor(Qt.lightGray)
 
     @property
     def counters(self):
@@ -92,11 +116,24 @@ class PlayerPanel(QWidget):
         """Return the requested player widget."""
         return self.q_players[key]
 
+    def __iter__(self):
+        """Return iterator through player widgets."""
+        return iter(self.q_players.values())
+
+    def dressing_phase(self, dresser):
+        """Enable only the dresser."""
+        for name, player in self.q_players.items():
+            if name == dresser:
+                player.enable_dressing()
+            else:
+                player.disable()
+
+    def scoring_phase(self):
+        """Enable all player widget inputs except dressing."""
+        for name, player in self.q_players.items():
+            player.enable_scoring()
+
     def clear_round(self):
         """Clear all card counts."""
         for player in self.q_players.values():
             player.q_cards.setText("")
-
-    def __iter__(self):
-        """Return iterator through player widgets."""
-        return iter(self.q_players.values())

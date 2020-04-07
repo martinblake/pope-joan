@@ -1,10 +1,13 @@
 """Entry point for the application."""
 import argparse
 import sys
+from enum import Enum, auto
 
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QApplication,
     QGridLayout,
+    QLabel,
     QMainWindow,
     QPushButton,
     QWidget,
@@ -33,6 +36,49 @@ class Window(QMainWindow):
         self.show()
 
 
+class Phase(Enum):
+    """An enumeration of phases in each round."""
+    DRESSING = auto()
+    SCORING = auto()
+
+    def next(self):
+        """Return the next phase."""
+        if self == self.DRESSING:
+            return self.SCORING
+        else:
+            return self.DRESSING
+
+
+class GameState:
+    """A tracker of the state of play."""
+
+    def __init__(self, players):
+        """Initialise round and phase."""
+        self.round = 1
+        self.phase = Phase.DRESSING
+        self.players = players
+        self.dresser_idx = 0
+
+    def advance(self):
+        """Proceed to the next round/phase."""
+        self.phase = self.phase.next()
+        if self.phase == Phase.DRESSING:
+            self.round += 1
+            self.dresser_idx += 1
+            if self.dresser_idx >= len(self.players):
+                self.dresser_idx = 0
+
+    @property
+    def title(self):
+        """Return a title for displaying round and phase."""
+        return f"Round {self.round} - {self.phase.name.title()}"
+
+    @property
+    def dresser(self):
+        """Return the current board dresser."""
+        return self.players[self.dresser_idx]
+
+
 class GameView(QWidget):
     """Top level view for game activity."""
 
@@ -41,26 +87,46 @@ class GameView(QWidget):
         super().__init__()
         layout = QGridLayout()
 
+        # Add a title indicating the game state
+        self.state = GameState(players)
+        self.q_title = QLabel(self.state.title)
+        self.q_title.setFont(QFont('SansSerif', 16, QFont.Bold))
+        layout.addWidget(self.q_title, 0, 0, 1, 2)
+
         # Add board view
-        self.q_board = Board(players)
-        layout.addWidget(self.q_board, 0, 0, 2, 1)
+        self.q_board = Board(players, self.game_winner_cb)
+        layout.addWidget(self.q_board, 1, 0, 2, 1)
 
         # Add a panel showing details for each player
         self.q_players = PlayerPanel(players, self.dress)
-        layout.addWidget(self.q_players, 0, 1)
+        layout.addWidget(self.q_players, 1, 1)
 
         # Add a button for completing the round
         self.q_end_round = QPushButton("End Round")
         self.q_end_round.clicked.connect(self.end_round)
-        layout.addWidget(self.q_end_round, 1, 1)
+        layout.addWidget(self.q_end_round, 2, 1)
 
         self.setLayout(layout)
+
+        # Initial state
+        self.q_board.disable()
+        self.q_players.dressing_phase(self.state.dresser)
+        self.q_end_round.setEnabled(False)
 
     def dress(self, player_name):
         """Dress the board using counters from the named player."""
         player = self.q_players[player_name]
         if self.q_board.dress_value <= player.counters:
             player.counters -= self.q_board.dress()
+            self.advance_game_state()
+            self.q_board.enable()
+            self.q_players.scoring_phase()
+
+    def game_winner_cb(self, name):
+        """
+        Only enable the 'End Round' button once the game winner is selected.
+        """
+        self.q_end_round.setEnabled(name != "")
 
     def end_round(self):
         """Complete counter transactions required at the end of the round."""
@@ -82,6 +148,16 @@ class GameView(QWidget):
             # Clear round-specific data inputs
             self.q_board.clear_round()
             self.q_players.clear_round()
+
+            self.advance_game_state()
+            self.q_board.disable()
+            self.q_players.dressing_phase(self.state.dresser)
+            self.q_end_round.setEnabled(False)
+
+    def advance_game_state(self):
+        """Advance the game state, update the title and usable widgets."""
+        self.state.advance()
+        self.q_title.setText(self.state.title)
 
 
 if __name__ == '__main__':
