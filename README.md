@@ -7,7 +7,7 @@ A Pope Joan board viewer for keeping track of scores.
 
 ## Priority 0
 
-* Space for > 5 players
+* Autofill game winner cards to zero
 * Matrimony / Intrique automatically fill in Jack, Queen, King
 * Split into phases with clear outlines of relevant widgets
 * Keep track of who is dressing
@@ -27,3 +27,7 @@ A Pope Joan board viewer for keeping track of scores.
 ## Priority 3
 
 * Make multiplayer with card interface
+
+## Priority 4
+
+* Voice recognition automatically fills in board

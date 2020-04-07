@@ -8,7 +8,6 @@ from PyQt5.QtWidgets import (
     QLabel,
     QPushButton,
     QTextEdit,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -24,6 +23,8 @@ class Player(QGroupBox):
     def __init__(self, name, dress_cb):
         super().__init__(name)
         self.setMaximumHeight(130)
+        self.setMinimumWidth(150)
+        self.setMaximumWidth(150)
         self.setFont(QFont('SansSerif', 10, QFont.Bold))
         self.setAlignment(Qt.AlignCenter)
 
@@ -61,15 +62,17 @@ class Player(QGroupBox):
 
 class PlayerPanel(QWidget):
 
+    N_ROWS = 4
+
     def __init__(self, players, dress_cb):
         super().__init__()
-        layout = QVBoxLayout()
+        layout = QGridLayout()
 
         self.q_players = {}
         for i, name in enumerate(players):
             player = Player(name, partial(dress_cb, name))
             self.q_players[name] = player
-            layout.addWidget(player)
+            layout.addWidget(player, i % self.N_ROWS, i // self.N_ROWS)
 
         self.setLayout(layout)
 
