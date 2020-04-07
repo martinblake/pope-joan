@@ -1,3 +1,4 @@
+"""Management of per-player info."""
 from functools import partial
 
 from PyQt5.QtCore import Qt
@@ -13,14 +14,17 @@ from PyQt5.QtWidgets import (
 
 
 class Player(QGroupBox):
+    """A widget for managing player info."""
 
     @staticmethod
     def _label(text, font=QFont.Normal):
+        """Return a label of the default style for this widget."""
         label = QLabel(text)
         label.setFont(QFont('SansSerif', 8, font))
         return label
 
     def __init__(self, name, dress_cb):
+        """Initialise with name and a callback for board dressing."""
         super().__init__(name)
         self.setMaximumHeight(130)
         self.setMinimumWidth(150)
@@ -47,24 +51,32 @@ class Player(QGroupBox):
 
     @property
     def counters(self):
+        """Get the number of counters."""
         return self.__counters
 
     @counters.setter
     def counters(self, val):
+        """Set the number of counters."""
         self.__counters = val
         self.q_counters.setText(str(self.__counters))
         self.update()
 
     @property
     def cards(self):
-        return int(self.q_cards.toPlainText())
+        """Get the number of cards remaining."""
+        try:
+            return int(self.q_cards.toPlainText())
+        except ValueError:
+            return 0
 
 
 class PlayerPanel(QWidget):
+    """A panel of widgets for managing player info."""
 
     N_ROWS = 4
 
     def __init__(self, players, dress_cb):
+        """Initialise from a list of names and board dressing callback."""
         super().__init__()
         layout = QGridLayout()
 

@@ -7,8 +7,6 @@ A Pope Joan board viewer for keeping track of scores.
 
 ## Priority 0
 
-* Autofill game winner cards to zero
-* Matrimony / Intrique automatically fill in Jack, Queen, King
 * Split into phases with clear outlines of relevant widgets
 * Keep track of who is dressing
 

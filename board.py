@@ -1,3 +1,4 @@
+"""Management of the board display."""
 import numpy as np
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -82,6 +83,17 @@ class Segment(QGroupBox):
         self.counters = 0
         return payout
 
+    def automatically_populates(self, *segments):
+        """
+        Configure the provided segment's player entries to be set along with
+        this segment.
+        """
+        def callback():
+            index = self.q_player.currentIndex()
+            for segment in segments:
+                segment.q_player.setCurrentIndex(index)
+        self.q_player.currentIndexChanged.connect(callback)
+
 
 class Board(QGraphicsView):
     """Representation of the state of the board."""
@@ -99,16 +111,18 @@ class Board(QGraphicsView):
         scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
 
         self.q_game = Segment("Game", 1, players)
-        self.q_segments = (
-            self.q_game,
-            Segment("Ace", 1, players),
-            Segment("Jack", 1, players),
-            Segment("Intrigue", 2, players),
-            Segment("Queen", 1, players),
-            Segment("Matrimony", 2, players),
-            Segment("King", 1, players),
-            Segment("9 Diamonds", 6, players),
-        )
+        q_ace = Segment("Ace", 1, players)
+        q_jack = Segment("Jack", 1, players)
+        q_intrigue = Segment("Intrigue", 2, players)
+        q_queen = Segment("Queen", 1, players)
+        q_matrimony = Segment("Matrimony", 2, players)
+        q_king = Segment("King", 1, players)
+        q_9d = Segment("9 Diamonds", 6, players)
+        self.q_segments = (self.q_game, q_ace, q_jack, q_intrigue,
+                           q_queen, q_matrimony, q_king, q_9d)
+
+        q_intrigue.automatically_populates(q_jack, q_queen)
+        q_matrimony.automatically_populates(q_queen, q_king)
 
         # Draw the board segment boundaries
         x0 = y0 = self.RADIUS
