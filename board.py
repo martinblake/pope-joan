@@ -4,6 +4,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QComboBox,
     QGraphicsScene,
+    QGraphicsView,
     QGroupBox,
     QGridLayout,
     QLabel,
@@ -82,18 +83,24 @@ class Segment(QGroupBox):
         return payout
 
 
-class Board(QGraphicsScene):
+class Board(QGraphicsView):
     """Representation of the state of the board."""
 
-    def __init__(self, radius, players):
-        """Initialise the board."""
-        super().__init__()
-        self.radius = radius
-        self.addEllipse(0, 0, 2 * self.radius, 2 * self.radius)
+    RADIUS = 300
 
-        self.game = Segment("Game", 1, players)
-        self.segments = (
-            self.game,
+    def __init__(self, players):
+        """Initialise the board."""
+        scene = QGraphicsScene()
+        super().__init__(scene)
+
+        self.setMinimumWidth(self.RADIUS * 2.1)
+        self.setMinimumHeight(self.RADIUS * 2.1)
+
+        scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
+
+        self.q_game = Segment("Game", 1, players)
+        self.q_segments = (
+            self.q_game,
             Segment("Ace", 1, players),
             Segment("Jack", 1, players),
             Segment("Intrigue", 2, players),
@@ -104,26 +111,40 @@ class Board(QGraphicsScene):
         )
 
         # Draw the board segment boundaries
-        x0 = y0 = self.radius
-        for i, seg in enumerate(self.segments):
-            theta = 2 * np.pi * i / len(self.segments)
-            x1 = x0 + self.radius * np.cos(theta)
-            y1 = y0 + self.radius * np.sin(theta)
-            self.addLine(x0, y0, x1, y1)
+        x0 = y0 = self.RADIUS
+        for i, seg in enumerate(self.q_segments):
+            theta = 2 * np.pi * i / len(self.q_segments)
+            x1 = x0 + self.RADIUS * np.cos(theta)
+            y1 = y0 + self.RADIUS * np.sin(theta)
+            scene.addLine(x0, y0, x1, y1)
 
         # Add widgets for each segment
-        for i, seg in enumerate(self.segments):
-            self.addWidget(seg)
-            theta = 2 * np.pi * (i + 0.5) / len(self.segments)
-            x = self.radius + 0.7 * self.radius * np.cos(theta)
-            y = self.radius + 0.7 * self.radius * np.sin(theta)
+        for i, seg in enumerate(self.q_segments):
+            scene.addWidget(seg)
+            theta = 2 * np.pi * (i + 0.5) / len(self.q_segments)
+            x = self.RADIUS + 0.7 * self.RADIUS * np.cos(theta)
+            y = self.RADIUS + 0.7 * self.RADIUS * np.sin(theta)
             seg.move(x, y)
 
     def dress(self):
         """Dress the board and return the cost."""
-        return sum([seg.dress() for seg in self.segments])
+        return sum([seg.dress() for seg in self.q_segments])
 
     @property
     def dress_value(self):
         """Return the full cost of dressing the board."""
-        return sum([seg.dress_value for seg in self.segments])
+        return sum([seg.dress_value for seg in self.q_segments])
+
+    def clear_round(self):
+        """Clear the winner fields."""
+        for segment in self.q_segments:
+            segment.q_player.setCurrentIndex(0)
+
+    def __iter__(self):
+        """Return iterator through segment widgets."""
+        return iter(self.q_segments)
+
+    @property
+    def winner(self):
+        """Return the name of the game winner."""
+        return self.q_game.winner

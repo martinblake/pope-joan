@@ -72,3 +72,16 @@ class PlayerPanel(QWidget):
             layout.addWidget(player)
 
         self.setLayout(layout)
+
+    def __getitem__(self, key):
+        """Return the requested player widget."""
+        return self.q_players[key]
+
+    def clear_round(self):
+        """Clear all card counts."""
+        for player in self.q_players.values():
+            player.q_cards.setText("")
+
+    def __iter__(self):
+        """Return iterator through player widgets."""
+        return iter(self.q_players.values())
