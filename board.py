@@ -104,6 +104,10 @@ class Segment(QGroupBox):
                 segment.q_player.setCurrentIndex(index)
         self.q_player.currentIndexChanged.connect(callback)
 
+    def drop_player(self, name):
+        """Drop a player from the winner options."""
+        self.q_player.removeItem(self.q_player.findText(name))
+
 
 class Board(QGraphicsView):
     """Representation of the state of the board."""
@@ -194,3 +198,8 @@ class Board(QGraphicsView):
     def winner(self):
         """Return the name of the game winner."""
         return self.q_game.winner
+
+    def drop_player(self, name):
+        """Drop a player from the winner options."""
+        for segment in self.q_segments:
+            segment.drop_player(name)

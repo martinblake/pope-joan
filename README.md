@@ -22,7 +22,9 @@ Each round is organised into 2 phases:
 
 ## Priority 0
 
-* Allow removal of player when below dressing limit or offer a loan
+* Keep track of borrowing with payback option
+* Add unit tests
+* Tidy up
 
 ## Priority 1
 

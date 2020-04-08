@@ -16,6 +16,8 @@ from PyQt5.QtWidgets import (
 from board import Board
 from player import PlayerPanel
 
+BORROW_AMOUNT = 10
+
 
 def parse_args():
     """Parse and return command line arguments."""
@@ -78,6 +80,12 @@ class GameState:
         """Return the current board dresser."""
         return self.players[self.dresser_idx]
 
+    def drop(self, player):
+        """Remove the given player from the game."""
+        self.players.remove(player)
+        if self.dresser_idx >= len(self.players):
+            self.dresser_idx = 0
+
 
 class GameView(QWidget):
     """Top level view for game activity."""
@@ -98,7 +106,7 @@ class GameView(QWidget):
         layout.addWidget(self.q_board, 1, 0, 2, 1)
 
         # Add a panel showing details for each player
-        self.q_players = PlayerPanel(players, self.dress)
+        self.q_players = PlayerPanel(players, self.dress, self.drop, self.borrow)
         layout.addWidget(self.q_players, 1, 1)
 
         # Add a button for completing the round
@@ -110,17 +118,30 @@ class GameView(QWidget):
 
         # Initial state
         self.q_board.disable()
-        self.q_players.dressing_phase(self.state.dresser)
+        self.q_players.dressing_phase(self.state.dresser,
+                                      self.q_board.dress_value)
         self.q_end_round.setEnabled(False)
 
-    def dress(self, player_name):
-        """Dress the board using counters from the named player."""
-        player = self.q_players[player_name]
-        if self.q_board.dress_value <= player.counters:
-            player.counters -= self.q_board.dress()
-            self.advance_game_state()
-            self.q_board.enable()
-            self.q_players.scoring_phase()
+    def dress(self, player):
+        """Dress the board using counters from the given player."""
+        player.counters -= self.q_board.dress()
+        self.advance_game_state()
+        self.q_board.enable()
+        self.q_players.scoring_phase()
+
+    def drop(self, player):
+        """Drop the given player from the game."""
+        player.setEnabled(False)
+        self.state.drop(player.name)
+        self.q_players.dressing_phase(self.state.dresser,
+                                      self.q_board.dress_value)
+        self.q_board.drop_player(player.name)
+
+    def borrow(self, player):
+        """Borrow some counters to stay in the game."""
+        player.counters += BORROW_AMOUNT
+        self.q_players.dressing_phase(self.state.dresser,
+                                      self.q_board.dress_value)
 
     def game_winner_cb(self, name):
         """
@@ -151,7 +172,8 @@ class GameView(QWidget):
 
             self.advance_game_state()
             self.q_board.disable()
-            self.q_players.dressing_phase(self.state.dresser)
+            self.q_players.dressing_phase(self.state.dresser,
+                                          self.q_board.dress_value)
             self.q_end_round.setEnabled(False)
 
     def advance_game_state(self):
