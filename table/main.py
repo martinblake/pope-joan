@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from board import Board
-from player import PlayerPanel
+from table.board import Board
+from table.player import PlayerPanel
 
 
 def parse_args():
@@ -32,7 +32,7 @@ class Window(QMainWindow):
         """Initialise the window."""
         super().__init__()
         self.setWindowTitle("Pope Joan")
-        self.setCentralWidget(GameView(players))
+        self.setCentralWidget(TableView(players))
         self.show()
 
 
@@ -85,7 +85,7 @@ class GameState:
             self.dresser_idx = 0
 
 
-class GameView(QWidget):
+class TableView(QWidget):
     """Top level view for game activity."""
 
     def __init__(self, players):

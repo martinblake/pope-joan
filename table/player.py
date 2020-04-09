@@ -12,6 +12,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+START_COUNTERS = 50
+
 
 class Player(QGroupBox):
     """A widget for managing player info."""
@@ -62,7 +64,7 @@ class Player(QGroupBox):
         self.q_drop.clicked.connect(partial(drop_cb, self))
         self.q_drop.hide()
 
-        self.counters = 50
+        self.counters = START_COUNTERS
 
         self.setLayout(self.grid)
 
