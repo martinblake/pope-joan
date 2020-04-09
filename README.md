@@ -22,7 +22,6 @@ Each round is organised into 2 phases:
 
 ## Priority 0
 
-* Keep track of borrowing with payback option
 * Add unit tests
 * Tidy up
 
@@ -31,11 +30,14 @@ Each round is organised into 2 phases:
 * Improve aesthetics
 * Record history with undo/reset options
 * Compile to executable
+* Start screen for:
+  - Player selection & order
+  - Initial number of counters
+  - Number of rounds
 
 ## Priority 2
 
 * Coins move around screen
-* Motion sensitive movement of tokens
 
 ## Priority 3
 
@@ -43,4 +45,5 @@ Each round is organised into 2 phases:
 
 ## Priority 4
 
+* Motion sensitive movement of tokens
 * Voice recognition automatically fills in board

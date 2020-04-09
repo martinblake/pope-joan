@@ -26,7 +26,7 @@ class Player(QGroupBox):
         label.setFont(QFont('SansSerif', 8, font))
         return label
 
-    def __init__(self, name, dress_cb, drop_cb, borrow_cb):
+    def __init__(self, name, dress_cb, drop_cb):
         """Initialise with name and a callback for board dressing."""
         super().__init__(name)
         self.name = name
@@ -58,15 +58,9 @@ class Player(QGroupBox):
 
         self.q_drop = QPushButton("Go Out")
         self.q_drop.setFont(QFont('SansSerif', 8, QFont.Normal))
-        self.grid.addWidget(self.q_drop, 2, 0)
+        self.grid.addWidget(self.q_drop, 2, 1)
         self.q_drop.clicked.connect(partial(drop_cb, self))
         self.q_drop.hide()
-
-        self.q_borrow = QPushButton("Borrow")
-        self.q_borrow.setFont(QFont('SansSerif', 8, QFont.Normal))
-        self.grid.addWidget(self.q_borrow, 2, 1)
-        self.q_borrow.clicked.connect(partial(borrow_cb, self))
-        self.q_borrow.hide()
 
         self.counters = 50
 
@@ -80,37 +74,44 @@ class Player(QGroupBox):
 
     def enable_dressing(self, dress_value):
         """
-        Enable dressing only, if player has sufficient counters,
-        otherwise offer drop / borrow options.
+        Enable dressing only, plus option to drop out if insufficient counters
+        remain.
         """
         self.q_dress.setEnabled(True)
+        self.q_drop.setEnabled(True)
         self.q_cards.setEnabled(False)
         if self.counters >= dress_value:
             self.setColor(Qt.green)
-            self.q_dress.show()
+            self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
             self.q_drop.hide()
-            self.q_borrow.hide()
         else:
             self.setColor(Qt.red)
+            self.grid.addWidget(self.q_dress, 2, 0)
             self.q_drop.show()
-            self.q_borrow.show()
-            self.q_dress.hide()
 
     def enable_scoring(self):
         """Enable scoring only."""
         self.q_dress.setEnabled(False)
+        self.q_drop.setEnabled(False)
         self.q_cards.setEnabled(True)
 
     def disable(self, dress_value):
         """Disable all inputs."""
         self.q_dress.setEnabled(False)
+        self.q_drop.setEnabled(False)
         self.q_cards.setEnabled(False)
         if not self.isEnabled():
             self.setColor(Qt.lightGray)
+            self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
+            self.q_drop.hide()
         elif self.counters < dress_value:
             self.setColor(Qt.yellow)
+            self.grid.addWidget(self.q_dress, 2, 0)
+            self.q_drop.show()
         else:
             self.setColor(Qt.darkGray)
+            self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
+            self.q_drop.hide()
 
     @property
     def counters(self):
@@ -138,14 +139,14 @@ class PlayerPanel(QWidget):
 
     N_ROWS = 4
 
-    def __init__(self, players, dress_cb, drop_cb, borrow_cb):
+    def __init__(self, players, dress_cb, drop_cb):
         """Initialise from a list of names and board dressing callback."""
         super().__init__()
         layout = QGridLayout()
 
         self.q_players = {}
         for i, name in enumerate(players):
-            player = Player(name, dress_cb, drop_cb, borrow_cb)
+            player = Player(name, dress_cb, drop_cb)
             self.q_players[name] = player
             layout.addWidget(player, i % self.N_ROWS, i // self.N_ROWS)
 

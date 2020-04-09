@@ -16,8 +16,6 @@ from PyQt5.QtWidgets import (
 from board import Board
 from player import PlayerPanel
 
-BORROW_AMOUNT = 10
-
 
 def parse_args():
     """Parse and return command line arguments."""
@@ -106,7 +104,7 @@ class GameView(QWidget):
         layout.addWidget(self.q_board, 1, 0, 2, 1)
 
         # Add a panel showing details for each player
-        self.q_players = PlayerPanel(players, self.dress, self.drop, self.borrow)
+        self.q_players = PlayerPanel(players, self.dress, self.drop)
         layout.addWidget(self.q_players, 1, 1)
 
         # Add a button for completing the round
@@ -136,12 +134,6 @@ class GameView(QWidget):
         self.q_players.dressing_phase(self.state.dresser,
                                       self.q_board.dress_value)
         self.q_board.drop_player(player.name)
-
-    def borrow(self, player):
-        """Borrow some counters to stay in the game."""
-        player.counters += BORROW_AMOUNT
-        self.q_players.dressing_phase(self.state.dresser,
-                                      self.q_board.dress_value)
 
     def game_winner_cb(self, name):
         """
