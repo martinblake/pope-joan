@@ -1,8 +1,10 @@
 import unittest
 from contextlib import contextmanager
+from copy import copy
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPalette
+from PyQt5.QtTest import QTest
 
 from table.main import TableView
 from table.player import START_COUNTERS
@@ -22,7 +24,7 @@ class TableTest(unittest.TestCase):
 
     def setUp(self):
         """Initialise the table view."""
-        self.table = TableView(TEST_PLAYERS)
+        self.table = TableView(copy(TEST_PLAYERS))
 
     def find_segment(self, segment_name):
         """Find the segment with the given name."""
@@ -38,7 +40,7 @@ class TableTest(unittest.TestCase):
         """Mock a player winning a segment."""
         segment = self.find_segment(segment_name)
         QTest.mouseClick(segment.q_player, Qt.LeftButton)
-        for _ in range(TEST_PLAYERS.index(player_name) + 1):
+        for _ in range(self.table.state.players.index(player_name) + 1):
             QTest.keyEvent(QTest.Press, segment.q_player, Qt.Key_Down)
         QTest.keyEvent(QTest.Press, segment.q_player, Qt.Key_Enter)
 
@@ -87,6 +89,11 @@ class TableTest(unittest.TestCase):
         with self.assert_count_changes(expected_count_changes):
             QTest.mouseClick(self.table.q_players[player_name].q_dress,
                              Qt.LeftButton)
+
+    def check_player_color(self, player, color):
+        """Check the window colour for the given player's view."""
+        player = self.table.q_players[player]
+        self.assertEqual(color, player.palette().color(QPalette.Window))
 
     def check_failed_board_dress(self, player_name):
         """Check that the given player cannot dress the board."""
@@ -189,3 +196,75 @@ class TableTest(unittest.TestCase):
         }
         with self.assert_count_changes(expected_changes):
             QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
+
+    def test_player_drop_out(self):
+        """Test player drop out option when unable to dress."""
+
+        # Drain player 1 of counters in first round
+        self.finish_dress()
+        self.mock_cards_left("Player1", 45)
+        self.mock_segment_win("Player0", "Game")
+        QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
+
+        # Player 1 drops out
+        QTest.mouseClick(self.table.q_players["Player1"].q_drop, Qt.LeftButton)
+
+        # Board dressing continues to player 2
+        self.check_failed_board_dress("Player1")
+        self.check_successful_board_dress("Player2")
+
+        # Player 1 can no longer win segments
+        self.assertRaises(
+            ValueError, lambda: self.mock_segment_win("Player1", "Game")
+        )
+
+        # Player 1 can no longer lose cards
+        self.mock_cards_left("Player1", 5)
+        self.mock_segment_win("Player0", "Game")
+        expected_changes = {"Player0": 1, "Game": -1}
+        with self.assert_count_changes(expected_changes):
+            QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
+
+    def test_dresser_highlights(self):
+        """
+        Test highlighting based on whether players are expected to or are
+        able to dress the board.
+        """
+
+        # Player 0 is the initial dresser
+        self.check_player_color("Player0", Qt.green)
+
+        # Player 0 cannot drop out
+        QTest.mouseClick(self.table.q_players["Player1"].q_drop, Qt.LeftButton)
+        self.check_player_color("Player0", Qt.green)
+
+        # Player 0 is still indicated as the dresser even after dressing
+        self.finish_dress()
+        self.check_player_color("Player0", Qt.green)
+
+        # Players 1 and 2 are drained of counters
+        self.mock_cards_left("Player1", 40)
+        self.mock_cards_left("Player2", 40)
+        self.finish_round()
+
+        # Player 0 is no longer the dresser
+        self.check_player_color("Player0", Qt.darkGray)
+
+        # Player 1 must dress but cannot
+        self.check_player_color("Player1", Qt.red)
+
+        # Player 2 doesn't need to dress yet, but wouldn't be able to
+        self.check_player_color("Player2", Qt.yellow)
+
+        # Player 1 drops out
+        QTest.mouseClick(self.table.q_players["Player1"].q_drop, Qt.LeftButton)
+        self.check_player_color("Player1", Qt.lightGray)
+
+        # Player 2 now must dress
+        self.check_player_color("Player2", Qt.red)
+
+        # Player 2 keeps playing, but goes negative
+        self.finish_dress()
+        self.assertLess(
+            int(self.table.q_players["Player2"].q_counters.text()), 0
+        )

@@ -22,9 +22,6 @@ Each round is organised into 2 phases:
 
 ## Priority 0
 
-* Add unit tests for:
-  - Formatting based on whether players can dress
-  - Ability for players to drop out
 * Tidy up
 
 ## Priority 1
