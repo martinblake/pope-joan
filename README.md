@@ -23,11 +23,8 @@ Each round is organised into 2 phases:
 ## Priority 0
 
 * Add unit tests for:
-  - Sum total of board & players staying the same
   - Formatting based on whether players can dress
   - Ability for players to drop out
-  - Counter exchange between players and board
-  - Counter exchange among players
 * Tidy up
 
 ## Priority 1
