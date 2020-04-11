@@ -266,3 +266,12 @@ class TableTest(unittest.TestCase):
         self.assertLess(
             int(self.table.q_players["Player2"].q_counters.text()), 0
         )
+
+        # Player 3 has enough to dress once...
+        self.mock_cards_left("Player3", 30)
+        self.finish_round()
+        self.check_player_color("Player3", Qt.green)
+
+        # ...but will then be below the limit
+        self.finish_dress()
+        self.check_player_color("Player3", Qt.yellow)

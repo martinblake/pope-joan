@@ -86,8 +86,9 @@ class Player(QGroupBox):
         can_dress = balance >= dress_value()
         self.set_color(
             Qt.lightGray if not is_in_game
-            else (Qt.green if can_dress else Qt.red) if is_dresser
-            else (Qt.darkGray if can_dress else Qt.yellow)
+            else (Qt.green if is_dresser else Qt.darkGray) if can_dress
+            else (Qt.red if is_dresser and (phase == Phase.DRESSING)
+                  else Qt.yellow)
         )
         if can_dress:
             self.layout.addWidget(self.q_dress, 2, 0, 1, 2)
