@@ -38,7 +38,7 @@ class Phase(Enum):
 class Scorer:
     """A tracker of the state of play."""
 
-    def __init__(self, players):
+    def __init__(self, starting_value, players):
         """Initialise round and phase."""
         self.round = 1
         self.phase = Phase.DRESSING
@@ -46,7 +46,7 @@ class Scorer:
         self.dresser_idx = 0
         self.balance = Balance(
             segments={s: 0 for s in SEGMENTS},
-            players={p: PLAYER_START_VALUE for p in self.players},
+            players={p: starting_value for p in self.players},
         )
 
     def _advance(self):

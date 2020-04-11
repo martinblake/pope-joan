@@ -1,9 +1,9 @@
 """Entry point for the application."""
-import argparse
 import sys
 
 from PyQt5.QtWidgets import (
     QApplication,
+    QDialog,
     QGridLayout,
     QLabel,
     QMainWindow,
@@ -12,40 +12,36 @@ from PyQt5.QtWidgets import (
 )
 
 from table.board import Board
+from table.config import ConfigView
 from table.player import PlayerPanel
 from table.scorer import Scorer
 from table.style import adjust_font
 
 
-def parse_args():
-    """Parse and return command line arguments."""
-    parser = argparse.ArgumentParser(description="Create Pope Joan session.")
-    parser.add_argument("players", nargs="+",
-                        help="The names of the players.")
-    return parser.parse_args()
-
-
 class Window(QMainWindow):
     """The application window."""
 
-    def __init__(self, players):
+    def __init__(self, starting_value, players):
         """Initialise the window."""
         super().__init__()
         self.setWindowTitle("Pope Joan")
-        self.setCentralWidget(TableView(players))
+
+        self.setCentralWidget(
+            TableView(starting_value, players)
+        )
         self.show()
 
 
 class TableView(QWidget):
     """Top level view for game activity."""
 
-    def __init__(self, players):
+    def __init__(self, starting_value, players):
         """Initialise widgets."""
         super().__init__()
         layout = QGridLayout()
+        self.scorer = Scorer(starting_value, players)
 
         # Add a title indicating the game state
-        self.scorer = Scorer(players)
         self.q_title = adjust_font(QLabel(self.scorer.title),
                                    size=14, bold=True)
         layout.addWidget(self.q_title, 0, 0, 1, 2)
@@ -110,5 +106,7 @@ class TableView(QWidget):
 
 if __name__ == '__main__':
     App = QApplication(sys.argv)
-    window = Window(parse_args().players)
-    sys.exit(App.exec())
+    config = ConfigView()
+    if config.exec_() == QDialog.Accepted:
+        window = Window(config.starting_value, config.player_list)
+        sys.exit(App.exec())

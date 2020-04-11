@@ -7,7 +7,6 @@ from PyQt5.QtGui import QPalette
 from PyQt5.QtTest import QTest
 
 from table.main import TableView
-from table.player import START_COUNTERS
 
 App = QApplication([])
 
@@ -17,6 +16,7 @@ ALL_SEGMENTS = ["Game", "Ace", "Jack", "Queen", "King",
 ALL_PLAYERS_AND_SEGMENTS = [*TEST_PLAYERS, *ALL_SEGMENTS]
 
 DRESS_VALUE = 15
+START_COUNTERS = 50
 
 
 class TableTest(unittest.TestCase):
@@ -24,7 +24,7 @@ class TableTest(unittest.TestCase):
 
     def setUp(self):
         """Initialise the table view."""
-        self.table = TableView(copy(TEST_PLAYERS))
+        self.table = TableView(START_COUNTERS, copy(TEST_PLAYERS))
 
     def find_segment(self, segment_name):
         """Find the segment with the given name."""

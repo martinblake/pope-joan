@@ -15,8 +15,6 @@ from PyQt5.QtWidgets import (
 from table.scorer import Phase, dress_value
 from table.style import adjust_font
 
-START_COUNTERS = 50
-
 
 class Player(QGroupBox):
     """A widget for managing player info."""
@@ -31,7 +29,7 @@ class Player(QGroupBox):
         adjust_font(self, size=10, bold=True)
         self.setAlignment(Qt.AlignCenter)
 
-        self.layout = QGridLayout(self)
+        self.layout = QGridLayout()
         self._set_geometry(self.layout)
 
         self.q_counters = adjust_font(QLabel(""), bold=True)

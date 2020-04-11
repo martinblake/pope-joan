@@ -20,15 +20,15 @@ Each round is organised into 2 phases:
 
 # Feature Requests
 
+## Priority 0
+
+* Compile to executable
+* Improve aesthetics
+* Card dealer
+
 ## Priority 1
 
-* Improve aesthetics
 * Record history with undo/reset options
-* Compile to executable
-* Start screen for:
-  - Player selection & order
-  - Initial number of counters
-  - Number of rounds
 
 ## Priority 2
 
