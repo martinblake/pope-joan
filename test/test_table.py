@@ -29,7 +29,7 @@ class TableTest(unittest.TestCase):
     def find_segment(self, segment_name):
         """Find the segment with the given name."""
         segments = self.table.q_board.q_segments
-        return next(s for s in segments if s.title() == segment_name)
+        return next(v for k, v in segments.items() if k == segment_name)
 
     def find_widget(self, name):
         """Find the player or segment with the given name."""
@@ -40,7 +40,7 @@ class TableTest(unittest.TestCase):
         """Mock a player winning a segment."""
         segment = self.find_segment(segment_name)
         QTest.mouseClick(segment.q_player, Qt.LeftButton)
-        for _ in range(self.table.state.players.index(player_name) + 1):
+        for _ in range(self.table.scorer.players.index(player_name) + 1):
             QTest.keyEvent(QTest.Press, segment.q_player, Qt.Key_Down)
         QTest.keyEvent(QTest.Press, segment.q_player, Qt.Key_Enter)
 
@@ -110,8 +110,7 @@ class TableTest(unittest.TestCase):
         """Test the initial state of the table."""
 
         # Check the initial board state
-        for segment in self.table.q_board.q_segments:
-            self.assertEqual(0, segment.counters)
+        for segment in self.table.q_board.q_segments.values():
             self.assertEqual("0", segment.q_counters.text())
             for idx, name in enumerate(["", *TEST_PLAYERS]):
                 self.assertEqual(name, segment.q_player.itemText(idx))
@@ -119,7 +118,6 @@ class TableTest(unittest.TestCase):
 
         # Check the initial counters assigned to each player
         for player in self.table.q_players:
-            self.assertEqual(START_COUNTERS, player.counters)
             self.assertEqual(str(START_COUNTERS), player.q_counters.text())
 
     def test_board_dress(self):

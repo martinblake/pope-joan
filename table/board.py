@@ -1,5 +1,6 @@
 """Management of the board display."""
 import numpy as np
+from collections import OrderedDict
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -11,6 +12,8 @@ from PyQt5.QtWidgets import (
     QGridLayout,
     QLabel,
 )
+
+from table.scorer import Phase, SEGMENTS
 
 
 class Segment(QGroupBox):
@@ -57,56 +60,23 @@ class Segment(QGroupBox):
         h = self.rect().height()
         super().move(x - w / 2, y - h / 2)
 
-    def enable(self):
-        """Enable all input widgets."""
-        self.q_player.setEnabled(True)
-
-    def disable(self):
-        """Disable all input widgets."""
-        self.q_player.setEnabled(False)
-
-    def dress(self):
-        """Dress the segment and return the cost."""
-        self.counters += self.dress_value
-        return self.dress_value
-
-    @property
-    def counters(self):
-        """Get the number of counters."""
-        return self.__counters
-
-    @counters.setter
-    def counters(self, val):
-        """Set the number of counters."""
-        self.__counters = val
-        self.q_counters.setText(str(self.__counters))
-        self.update()
-
     @property
     def winner(self):
-        """Return the winner of the segment."""
+        """The assigned winner of the segment."""
         return self.q_player.currentText()
-
-    def empty(self):
-        """Empty the segment and return its payout."""
-        payout = self.counters
-        self.counters = 0
-        return payout
 
     def automatically_populates(self, *segments):
         """
         Configure the provided segment's player entries to be set along with
         this segment.
         """
+
         def callback():
             index = self.q_player.currentIndex()
             for segment in segments:
                 segment.q_player.setCurrentIndex(index)
-        self.q_player.currentIndexChanged.connect(callback)
 
-    def drop_player(self, name):
-        """Drop a player from the winner options."""
-        self.q_player.removeItem(self.q_player.findText(name))
+        self.q_player.currentIndexChanged.connect(callback)
 
 
 class Board(QGraphicsView):
@@ -128,30 +98,32 @@ class Board(QGraphicsView):
 
         scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
 
-        self.q_game = Segment("Game", 1, players)
-        q_ace = Segment("Ace", 1, players)
-        q_jack = Segment("Jack", 1, players)
-        q_intrigue = Segment("Intrigue", 2, players)
-        q_queen = Segment("Queen", 1, players)
-        q_matrimony = Segment("Matrimony", 2, players)
-        q_king = Segment("King", 1, players)
-        q_9d = Segment("9 Diamonds", 6, players)
-        self.q_segments = (self.q_game, q_ace, q_jack, q_intrigue,
-                           q_queen, q_matrimony, q_king, q_9d)
+        self.q_segments = OrderedDict(
+            (name, Segment(name, value, players))
+            for name, value in SEGMENTS.items()
+        )
 
-        q_intrigue.automatically_populates(q_jack, q_queen)
-        q_matrimony.automatically_populates(q_queen, q_king)
+        self.q_segments["Intrigue"].automatically_populates(
+            self.q_segments["Jack"], self.q_segments["Queen"]
+        )
+        self.q_segments["Matrimony"].automatically_populates(
+            self.q_segments["Queen"], self.q_segments["King"]
+        )
         self.q_game.q_player.currentIndexChanged.connect(
-            lambda: game_winner_cb(self.q_game.q_player.currentText())
+            lambda: game_winner_cb(self.q_game.winner)
         )
 
         self._draw_segment_boundaries(scene)
         self._add_segment_widgets(scene)
 
+    @property
+    def q_game(self):
+        return self.q_segments["Game"]
+
     def _draw_segment_boundaries(self, scene):
         """Draw the boundaries between adjacent segments."""
         x0 = y0 = self.RADIUS
-        for i, seg in enumerate(self.q_segments):
+        for i, seg in enumerate(self.q_segments.values()):
             theta = 2 * np.pi * i / len(self.q_segments)
             x1 = x0 + self.RADIUS * np.cos(theta)
             y1 = y0 + self.RADIUS * np.sin(theta)
@@ -159,47 +131,28 @@ class Board(QGraphicsView):
 
     def _add_segment_widgets(self, scene):
         """Add widgets for each segment."""
-        for i, seg in enumerate(self.q_segments):
+        for i, seg in enumerate(self.q_segments.values()):
             scene.addWidget(seg)
             theta = 2 * np.pi * (i + 0.5) / len(self.q_segments)
             x = self.RADIUS + 0.7 * self.RADIUS * np.cos(theta)
             y = self.RADIUS + 0.7 * self.RADIUS * np.sin(theta)
             seg.move(x, y)
 
-    def enable(self):
-        """Enable all input widgets."""
-        for segment in self.q_segments:
-            segment.enable()
+    def refresh(self, phase, players, balance):
+        """Refresh the board."""
 
-    def disable(self):
-        """Disable all input widgets."""
-        for segment in self.q_segments:
-            segment.disable()
+        # Update segment counts
+        for segment, value in balance.items():
+            self.q_segments[segment].q_counters.setText(str(value))
 
-    def dress(self):
-        """Dress the board and return the cost."""
-        return sum([seg.dress() for seg in self.q_segments])
+        for segment in self.q_segments.values():
 
-    @property
-    def dress_value(self):
-        """Return the full cost of dressing the board."""
-        return sum([seg.dress_value for seg in self.q_segments])
+            # Update widget state based on the game phase
+            segment.q_player.setEnabled(phase == Phase.SCORING)
 
-    def clear_round(self):
-        """Clear the winner fields."""
-        for segment in self.q_segments:
+            # Update player options
+            segment.q_player.clear()
+            segment.q_player.addItems([None, *players])
             segment.q_player.setCurrentIndex(0)
 
-    def __iter__(self):
-        """Return iterator through segment widgets."""
-        return iter(self.q_segments)
-
-    @property
-    def winner(self):
-        """Return the name of the game winner."""
-        return self.q_game.winner
-
-    def drop_player(self, name):
-        """Drop a player from the winner options."""
-        for segment in self.q_segments:
-            segment.drop_player(name)
+        self.update()

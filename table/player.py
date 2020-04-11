@@ -12,6 +12,8 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from table.scorer import Phase, dress_value
+
 START_COUNTERS = 50
 
 
@@ -64,68 +66,40 @@ class Player(QGroupBox):
         self.q_drop.clicked.connect(partial(drop_cb, self))
         self.q_drop.hide()
 
-        self.counters = START_COUNTERS
-
         self.setLayout(self.grid)
 
-    def setColor(self, color):
+    def set_color(self, color):
         """Set the color palette."""
         pal = self.palette()
         pal.setColor(self.backgroundRole(), color)
         self.setPalette(pal)
 
-    def enable_dressing(self, dress_value):
-        """
-        Enable dressing only, plus option to drop out if insufficient counters
-        remain.
-        """
-        self.q_dress.setEnabled(True)
-        self.q_drop.setEnabled(True)
-        self.q_cards.setEnabled(False)
-        if self.counters >= dress_value:
-            self.setColor(Qt.green)
+    def refresh(self, phase, is_in_game, is_dresser, balance):
+        """Refresh the widget based on the game state."""
+
+        # Update player scores
+        self.q_counters.setText(str(balance))
+
+        # Clear card counts
+        self.q_cards.setText("")
+
+        # Update widget state based on the game phase
+        self.setEnabled(is_in_game)
+        self.q_dress.setEnabled(is_dresser and (phase == Phase.DRESSING))
+        self.q_drop.setEnabled(is_dresser and (phase == Phase.DRESSING))
+        self.q_cards.setEnabled(phase == Phase.SCORING)
+        can_dress = balance >= dress_value()
+        self.set_color(
+            Qt.lightGray if not is_in_game
+            else (Qt.green if can_dress else Qt.red) if is_dresser
+            else (Qt.darkGray if can_dress else Qt.yellow)
+        )
+        if can_dress:
             self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
             self.q_drop.hide()
         else:
-            self.setColor(Qt.red)
             self.grid.addWidget(self.q_dress, 2, 0)
             self.q_drop.show()
-
-    def enable_scoring(self):
-        """Enable scoring only."""
-        self.q_dress.setEnabled(False)
-        self.q_drop.setEnabled(False)
-        self.q_cards.setEnabled(True)
-
-    def disable(self, dress_value):
-        """Disable all inputs."""
-        self.q_dress.setEnabled(False)
-        self.q_drop.setEnabled(False)
-        self.q_cards.setEnabled(False)
-        if not self.isEnabled():
-            self.setColor(Qt.lightGray)
-            self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
-            self.q_drop.hide()
-        elif self.counters < dress_value:
-            self.setColor(Qt.yellow)
-            self.grid.addWidget(self.q_dress, 2, 0)
-            self.q_drop.show()
-        else:
-            self.setColor(Qt.darkGray)
-            self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
-            self.q_drop.hide()
-
-    @property
-    def counters(self):
-        """Get the number of counters."""
-        return self.__counters
-
-    @counters.setter
-    def counters(self, val):
-        """Set the number of counters."""
-        self.__counters = val
-        self.q_counters.setText(str(self.__counters))
-        self.update()
 
     @property
     def cards(self):
@@ -162,20 +136,11 @@ class PlayerPanel(QWidget):
         """Return iterator through player widgets."""
         return iter(self.q_players.values())
 
-    def dressing_phase(self, dresser, dress_value):
-        """Enable only the dresser."""
-        for name, player in self.q_players.items():
-            if name == dresser:
-                player.enable_dressing(dress_value)
-            else:
-                player.disable(dress_value)
+    def refresh(self, phase, players, dresser, balance):
+        """Refresh the player score displays based on the game state."""
 
-    def scoring_phase(self):
-        """Enable all player widget inputs except dressing."""
         for name, player in self.q_players.items():
-            player.enable_scoring()
-
-    def clear_round(self):
-        """Clear all card counts."""
-        for player in self.q_players.values():
-            player.q_cards.setText("")
+            player.refresh(phase,
+                           name in players,
+                           name == dresser,
+                           balance[name])
