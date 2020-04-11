@@ -20,10 +20,6 @@ Each round is organised into 2 phases:
 
 # Feature Requests
 
-## Priority 0
-
-* Tidy up
-
 ## Priority 1
 
 * Improve aesthetics

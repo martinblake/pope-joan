@@ -3,7 +3,6 @@ import numpy as np
 from collections import OrderedDict
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QComboBox,
     QGraphicsScene,
@@ -14,17 +13,11 @@ from PyQt5.QtWidgets import (
 )
 
 from table.scorer import Phase, SEGMENTS
+from table.style import adjust_font
 
 
 class Segment(QGroupBox):
     """A single segment of the board."""
-
-    @staticmethod
-    def _label(text, font=QFont.Normal):
-        """Return a label with consistent formatting."""
-        label = QLabel(text)
-        label.setFont(QFont('SansSerif', 8, font))
-        return label
 
     def __init__(self, name, dress_value, players):
         """
@@ -32,17 +25,16 @@ class Segment(QGroupBox):
         players.
         """
         super().__init__(name)
-        self.setFont(QFont('SansSerif', 10, QFont.Bold))
+        adjust_font(self, size=10, bold=True)
         self.setAlignment(Qt.AlignCenter)
         self.dress_value = dress_value
 
         grid = QGridLayout(self)
-        grid.addWidget(self._label("Count:"), 0, 0)
-        grid.addWidget(self._label("Player:"), 1, 0)
+        grid.addWidget(adjust_font(QLabel("Count:")), 0, 0)
+        grid.addWidget(adjust_font(QLabel("Player:")), 1, 0)
 
-        self.q_counters = self._label("", font=QFont.Bold)
-        self.q_player = QComboBox()
-        self.q_player.setFont(QFont('SansSerif', 8, QFont.Normal))
+        self.q_counters = adjust_font(QLabel(""), bold=True)
+        self.q_player = adjust_font(QComboBox())
         self.q_player.addItems([None, *players])
         grid.addWidget(self.q_counters, 0, 1)
         grid.addWidget(self.q_player, 1, 1)

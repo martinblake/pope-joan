@@ -2,17 +2,18 @@
 from functools import partial
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
     QGroupBox,
     QGridLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
-    QTextEdit,
     QWidget,
 )
 
 from table.scorer import Phase, dress_value
+from table.style import adjust_font
 
 START_COUNTERS = 50
 
@@ -23,50 +24,46 @@ class Player(QGroupBox):
     HEIGHT = 130
     WIDTH = 150
 
-    @staticmethod
-    def _label(text, font=QFont.Normal):
-        """Return a label of the default style for this widget."""
-        label = QLabel(text)
-        label.setFont(QFont('SansSerif', 8, font))
-        return label
-
     def __init__(self, name, dress_cb, drop_cb):
         """Initialise with name and a callback for board dressing."""
         super().__init__(name)
         self.name = name
+        adjust_font(self, size=10, bold=True)
+        self.setAlignment(Qt.AlignCenter)
+
+        self.layout = QGridLayout(self)
+        self._set_geometry(self.layout)
+
+        self.q_counters = adjust_font(QLabel(""), bold=True)
+        self.layout.addWidget(adjust_font(QLabel("Count:"), size=8), 0, 0)
+        self.layout.addWidget(self.q_counters, 0, 1)
+
+        self.q_cards = adjust_font(QLineEdit())
+        self.q_cards.setValidator(QIntValidator())
+        self.layout.addWidget(adjust_font(QLabel("Cards:"), size=8), 1, 0)
+        self.layout.addWidget(self.q_cards, 1, 1)
+
+        self.q_dress = adjust_font(QPushButton("Dress"))
+        self.q_dress.clicked.connect(partial(dress_cb, self))
+        self.layout.addWidget(self.q_dress, 2, 0, 1, 2)
+
+        self.q_drop = adjust_font(QPushButton("Go Out"))
+        self.layout.addWidget(self.q_drop, 2, 1)
+        self.q_drop.clicked.connect(partial(drop_cb, self))
+        self.q_drop.hide()
+
+        self.setLayout(self.layout)
+
+    def _set_geometry(self, layout):
+        """Set the widget dimensions."""
         self.setMinimumHeight(self.HEIGHT)
         self.setMaximumHeight(self.HEIGHT)
         self.setMinimumWidth(self.WIDTH)
         self.setMaximumWidth(self.WIDTH)
-        self.setFont(QFont('SansSerif', 10, QFont.Bold))
-        self.setAlignment(Qt.AlignCenter)
-
-        self.grid = QGridLayout(self)
         for col in range(2):
-            self.grid.setColumnMinimumWidth(col, self.WIDTH / 2)
+            layout.setColumnMinimumWidth(col, self.WIDTH / 2)
         for row in range(3):
-            self.grid.setRowMinimumHeight(row, self.HEIGHT / 2)
-        self.grid.addWidget(self._label("Count:"), 0, 0)
-        self.grid.addWidget(self._label("Cards:"), 1, 0)
-
-        self.q_counters = self._label("", font=QFont.Bold)
-        self.q_cards = QTextEdit()
-        self.q_cards.setFont(QFont('SansSerif', 8, QFont.Normal))
-        self.grid.addWidget(self.q_counters, 0, 1)
-        self.grid.addWidget(self.q_cards, 1, 1)
-
-        self.q_dress = QPushButton("Dress")
-        self.q_dress.setFont(QFont('SansSerif', 8, QFont.Normal))
-        self.q_dress.clicked.connect(partial(dress_cb, self))
-        self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
-
-        self.q_drop = QPushButton("Go Out")
-        self.q_drop.setFont(QFont('SansSerif', 8, QFont.Normal))
-        self.grid.addWidget(self.q_drop, 2, 1)
-        self.q_drop.clicked.connect(partial(drop_cb, self))
-        self.q_drop.hide()
-
-        self.setLayout(self.grid)
+            layout.setRowMinimumHeight(row, self.HEIGHT / 3)
 
     def set_color(self, color):
         """Set the color palette."""
@@ -95,17 +92,17 @@ class Player(QGroupBox):
             else (Qt.darkGray if can_dress else Qt.yellow)
         )
         if can_dress:
-            self.grid.addWidget(self.q_dress, 2, 0, 1, 2)
+            self.layout.addWidget(self.q_dress, 2, 0, 1, 2)
             self.q_drop.hide()
         else:
-            self.grid.addWidget(self.q_dress, 2, 0)
+            self.layout.addWidget(self.q_dress, 2, 0)
             self.q_drop.show()
 
     @property
     def cards(self):
         """Get the number of cards remaining."""
         try:
-            return int(self.q_cards.toPlainText())
+            return int(self.q_cards.text())
         except ValueError:
             return 0
 

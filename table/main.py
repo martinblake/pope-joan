@@ -2,7 +2,6 @@
 import argparse
 import sys
 
-from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QApplication,
     QGridLayout,
@@ -15,6 +14,7 @@ from PyQt5.QtWidgets import (
 from table.board import Board
 from table.player import PlayerPanel
 from table.scorer import Scorer
+from table.style import adjust_font
 
 
 def parse_args():
@@ -46,8 +46,8 @@ class TableView(QWidget):
 
         # Add a title indicating the game state
         self.scorer = Scorer(players)
-        self.q_title = QLabel(self.scorer.title)
-        self.q_title.setFont(QFont('SansSerif', 16, QFont.Bold))
+        self.q_title = adjust_font(QLabel(self.scorer.title),
+                                   size=14, bold=True)
         layout.addWidget(self.q_title, 0, 0, 1, 2)
 
         # Add board view
