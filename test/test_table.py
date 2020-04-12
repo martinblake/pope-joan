@@ -26,34 +26,30 @@ class TableTest(unittest.TestCase):
         """Initialise the table view."""
         self.table = TableView(START_COUNTERS, copy(TEST_PLAYERS))
 
-    def find_segment(self, segment_name):
-        """Find the segment with the given name."""
-        segments = self.table.q_board.q_segments
-        return next(v for k, v in segments.items() if k == segment_name)
-
-    def find_widget(self, name):
+    def find_count(self, name):
         """Find the player or segment with the given name."""
-        return (self.table.q_players[name] if name in TEST_PLAYERS
-                else self.find_segment(name))
+        return (self.table.q_players[name].count.text()
+                if name in TEST_PLAYERS else
+                self.table.q_board.counts[name].toPlainText())
 
     def mock_segment_win(self, player_name, segment_name):
         """Mock a player winning a segment."""
-        segment = self.find_segment(segment_name)
-        QTest.mouseClick(segment.q_player, Qt.LeftButton)
+        winner = self.table.q_board.winners[segment_name]
+        QTest.mouseClick(winner, Qt.LeftButton)
         for _ in range(self.table.scorer.players.index(player_name) + 1):
-            QTest.keyEvent(QTest.Press, segment.q_player, Qt.Key_Down)
-        QTest.keyEvent(QTest.Press, segment.q_player, Qt.Key_Enter)
+            QTest.keyEvent(QTest.Press, winner, Qt.Key_Down)
+        QTest.keyEvent(QTest.Press, winner, Qt.Key_Enter)
 
     def mock_cards_left(self, player_name, number):
         """Mock the number of cards left in a player's hand."""
-        cards = self.table.q_players[player_name].q_cards
+        cards = self.table.q_players[player_name].cards
         QTest.mouseClick(cards, Qt.LeftButton)
         QTest.keyClicks(cards, str(number))
 
     def finish_dress(self):
         """Make sure the board is dressed by trying for every player."""
         for name in TEST_PLAYERS:
-            QTest.mouseClick(self.table.q_players[name].q_dress, Qt.LeftButton)
+            QTest.mouseClick(self.table.q_players[name].dress, Qt.LeftButton)
 
     def finish_round(self):
         """Finish the current round as simply as possible."""
@@ -68,13 +64,13 @@ class TableTest(unittest.TestCase):
             for name in ALL_PLAYERS_AND_SEGMENTS
         }
         expected_counts = {
-            name: int(self.find_widget(name).q_counters.text()) + change
+            name: int(self.find_count(name)) + change
             for name, change in full_change_dict.items()
         }
         yield
         self.assertEqual(
             expected_counts,
-            {name: int(self.find_widget(name).q_counters.text())
+            {name: int(self.find_count(name))
              for name in expected_counts}
         )
 
@@ -87,7 +83,7 @@ class TableTest(unittest.TestCase):
             "9 Diamonds": 6
         }
         with self.assert_count_changes(expected_count_changes):
-            QTest.mouseClick(self.table.q_players[player_name].q_dress,
+            QTest.mouseClick(self.table.q_players[player_name].dress,
                              Qt.LeftButton)
 
     def check_player_color(self, player, color):
@@ -103,22 +99,24 @@ class TableTest(unittest.TestCase):
              "Ace", "Intrigue", "Matrimony", "9 Diamonds")
         }
         with self.assert_count_changes(expected_count_changes):
-            QTest.mouseClick(self.table.q_players[player_name].q_dress,
+            QTest.mouseClick(self.table.q_players[player_name].dress,
                              Qt.LeftButton)
 
     def test_initialisation(self):
         """Test the initial state of the table."""
 
         # Check the initial board state
-        for segment in self.table.q_board.q_segments.values():
-            self.assertEqual("0", segment.q_counters.text())
+        for segment in ALL_SEGMENTS:
+            count = self.table.q_board.counts[segment]
+            winner = self.table.q_board.winners[segment]
+            self.assertEqual("0", count.toPlainText())
             for idx, name in enumerate(["", *TEST_PLAYERS]):
-                self.assertEqual(name, segment.q_player.itemText(idx))
-            self.assertEqual("", segment.q_player.currentText())
+                self.assertEqual(name, winner.itemText(idx))
+            self.assertEqual("", winner.currentText())
 
         # Check the initial counters assigned to each player
         for player in self.table.q_players:
-            self.assertEqual(str(START_COUNTERS), player.q_counters.text())
+            self.assertEqual(str(START_COUNTERS), player.count.text())
 
     def test_board_dress(self):
         """Test dressing the board."""
@@ -205,7 +203,7 @@ class TableTest(unittest.TestCase):
         QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
 
         # Player 1 drops out
-        QTest.mouseClick(self.table.q_players["Player1"].q_drop, Qt.LeftButton)
+        QTest.mouseClick(self.table.q_players["Player1"].drop, Qt.LeftButton)
 
         # Board dressing continues to player 2
         self.check_failed_board_dress("Player1")
@@ -233,7 +231,7 @@ class TableTest(unittest.TestCase):
         self.check_player_color("Player0", Qt.green)
 
         # Player 0 cannot drop out
-        QTest.mouseClick(self.table.q_players["Player1"].q_drop, Qt.LeftButton)
+        QTest.mouseClick(self.table.q_players["Player1"].drop, Qt.LeftButton)
         self.check_player_color("Player0", Qt.green)
 
         # Player 0 is still indicated as the dresser even after dressing
@@ -255,7 +253,7 @@ class TableTest(unittest.TestCase):
         self.check_player_color("Player2", Qt.yellow)
 
         # Player 1 drops out
-        QTest.mouseClick(self.table.q_players["Player1"].q_drop, Qt.LeftButton)
+        QTest.mouseClick(self.table.q_players["Player1"].drop, Qt.LeftButton)
         self.check_player_color("Player1", Qt.lightGray)
 
         # Player 2 now must dress
@@ -264,7 +262,7 @@ class TableTest(unittest.TestCase):
         # Player 2 keeps playing, but goes negative
         self.finish_dress()
         self.assertLess(
-            int(self.table.q_players["Player2"].q_counters.text()), 0
+            int(self.table.q_players["Player2"].count.text()), 0
         )
 
         # Player 3 has enough to dress once...

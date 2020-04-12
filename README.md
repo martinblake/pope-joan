@@ -23,7 +23,6 @@ Each round is organised into 2 phases:
 ## Priority 0
 
 * Compile to executable
-* Improve aesthetics
 * Card dealer
 
 ## Priority 1

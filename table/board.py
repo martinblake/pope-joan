@@ -3,43 +3,32 @@ import numpy as np
 from collections import OrderedDict
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (
-    QComboBox,
-    QGraphicsScene,
-    QGraphicsView,
-    QGroupBox,
-    QGridLayout,
-    QLabel,
-)
+from PyQt5.QtGui import QBrush, QColor, QFont, QImage, QPen
+from PyQt5.QtWidgets import QComboBox, QGraphicsScene, QGraphicsView
+
 
 from table.scorer import Phase, SEGMENTS
 
 
-class Segment(QGroupBox):
+class Winner(QComboBox):
     """A single segment of the board."""
 
-    def __init__(self, name, dress_value, players):
+    def __init__(self, players):
         """
         Initialise with name, amount required to dress and a full list of
         players.
         """
-        super().__init__(name)
-        self.setAlignment(Qt.AlignCenter)
-        self.dress_value = dress_value
+        super().__init__()
+        font = self.font()
+        font.setWeight(QFont.Black)
+        font.setPixelSize(15)
+        self.setFont(font)
+        self.set_options(players)
 
-        grid = QGridLayout(self)
-        grid.addWidget(QLabel("Count:"), 0, 0)
-        grid.addWidget(QLabel("Player:"), 1, 0)
-
-        self.q_counters = QLabel("")
-        self.q_player = QComboBox()
-        self.q_player.addItems([None, *players])
-        grid.addWidget(self.q_counters, 0, 1)
-        grid.addWidget(self.q_player, 1, 1)
-
-        self.counters = 0
-
-        self.setLayout(grid)
+    def set_options(self, players):
+        """Set the winner options."""
+        self.addItems([None, *players])
+        self.setItemData(0, Qt.red, Qt.FontRole)
 
     def move(self, x, y):
         """
@@ -50,23 +39,18 @@ class Segment(QGroupBox):
         h = self.rect().height()
         super().move(x - w / 2, y - h / 2)
 
-    @property
-    def winner(self):
-        """The assigned winner of the segment."""
-        return self.q_player.currentText()
-
-    def automatically_populates(self, *segments):
+    def automatically_populates(self, *winners):
         """
         Configure the provided segment's player entries to be set along with
         this segment.
         """
 
         def callback():
-            index = self.q_player.currentIndex()
-            for segment in segments:
-                segment.q_player.setCurrentIndex(index)
+            index = self.currentIndex()
+            for winner in winners:
+                winner.setCurrentIndex(index)
 
-        self.q_player.currentIndexChanged.connect(callback)
+        self.currentIndexChanged.connect(callback)
 
 
 class Board(QGraphicsView):
@@ -86,63 +70,119 @@ class Board(QGraphicsView):
         self.setMinimumWidth(self.RADIUS * 2.2)
         self.setMinimumHeight(self.RADIUS * 2.2)
 
-        scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
+        self._draw_background(scene)
 
-        self.q_segments = OrderedDict(
-            (name, Segment(name, value, players))
-            for name, value in SEGMENTS.items()
+        self.counts = self._place_counts(scene)
+        self.winners = self._place_winners(scene, players)
+
+        self.winners["Intrigue"].automatically_populates(
+            self.winners["Jack"], self.winners["Queen"]
+        )
+        self.winners["Matrimony"].automatically_populates(
+            self.winners["Queen"], self.winners["King"]
+        )
+        game_winner = self.winners["Game"]
+        game_winner.currentIndexChanged.connect(
+            lambda: game_winner_cb(game_winner)
         )
 
-        self.q_segments["Intrigue"].automatically_populates(
-            self.q_segments["Jack"], self.q_segments["Queen"]
-        )
-        self.q_segments["Matrimony"].automatically_populates(
-            self.q_segments["Queen"], self.q_segments["King"]
-        )
-        self.q_game.q_player.currentIndexChanged.connect(
-            lambda: game_winner_cb(self.q_game.winner)
-        )
+    @staticmethod
+    def _segment_angles():
+        """Return a list of angles in the middle of segments."""
+        return [2 * np.pi * (i + 0.5) / len(SEGMENTS)
+                for i in range(len(SEGMENTS))]
 
-        self._draw_segment_boundaries(scene)
-        self._add_segment_widgets(scene)
+    @staticmethod
+    def _boundary_angles():
+        """Return a list of angles on the boundaries between segments."""
+        return [2 * np.pi * i / len(SEGMENTS)
+                for i in range(len(SEGMENTS))]
 
-    @property
-    def q_game(self):
-        return self.q_segments["Game"]
+    def _from_radial(self, r_frac, theta):
+        """Return Cartesian coordinates from radial specification."""
+        x = self.RADIUS + r_frac * self.RADIUS * np.cos(theta)
+        y = self.RADIUS + r_frac * self.RADIUS * np.sin(theta)
+        return x, y
 
-    def _draw_segment_boundaries(self, scene):
+    def _draw_background(self, scene):
         """Draw the boundaries between adjacent segments."""
-        x0 = y0 = self.RADIUS
-        for i, seg in enumerate(self.q_segments.values()):
-            theta = 2 * np.pi * i / len(self.q_segments)
-            x1 = x0 + self.RADIUS * np.cos(theta)
-            y1 = y0 + self.RADIUS * np.sin(theta)
-            scene.addLine(x0, y0, x1, y1)
 
-    def _add_segment_widgets(self, scene):
-        """Add widgets for each segment."""
-        for i, seg in enumerate(self.q_segments.values()):
-            scene.addWidget(seg)
-            theta = 2 * np.pi * (i + 0.5) / len(self.q_segments)
-            x = self.RADIUS + 0.7 * self.RADIUS * np.cos(theta)
-            y = self.RADIUS + 0.7 * self.RADIUS * np.sin(theta)
-            seg.move(x, y)
+        ellipse = scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
+        ellipse.setPen(QPen(QBrush(), 0))
+        ellipse.setBrush(QBrush(QImage("resources/wood_texture.jpg")))
+
+        # Add segment boundaries
+        for theta in self._boundary_angles():
+            x1, y1 = self._from_radial(0.1, theta)
+            x2, y2 = self._from_radial(0.9, theta)
+            line = scene.addLine(x1, y1, x2, y2)
+            pen = line.pen()
+            pen.setBrush(QBrush(QColor(0, 0, 0, 128)))
+            pen.setWidth(10)
+            pen.setCapStyle(Qt.RoundCap)
+            line.setPen(pen)
+
+        # Add segment name label
+        for theta, name in zip(self._segment_angles(), SEGMENTS):
+            x_name, y_name = self._from_radial(0.9, theta)
+            text = scene.addText(name)
+            font = text.font()
+            font.setWeight(QFont.Black)
+            font.setPixelSize(20)
+            text.setFont(font)
+            text.setDefaultTextColor(QColor(0, 0, 0, 128))
+            center = text.boundingRect().center()
+            text.setTransformOriginPoint(center)
+            text.setPos(x_name - center.x(), y_name - center.y())
+            text_angle = np.degrees(theta) % 180 - 90
+            text.setRotation(text_angle)
+
+    def _place_counts(self, scene):
+        """Place and return a dict of counter counts."""
+
+        def place_count(theta):
+            x_count, y_count = self._from_radial(0.4, theta)
+            count = scene.addText("0")
+            font = count.font()
+            font.setWeight(QFont.Black)
+            font.setPixelSize(40)
+            count.setFont(font)
+            count.setDefaultTextColor(QColor(0, 0, 0, 128))
+            center = count.boundingRect().center()
+            count.setPos(x_count - center.x(), y_count - center.y())
+            return count
+
+        return OrderedDict(
+            (name, place_count(theta))
+            for name, theta in zip(SEGMENTS, self._segment_angles())
+        )
+
+    def _place_winners(self, scene, players):
+        """Place and return a dict of winner selection boxes."""
+        winners = OrderedDict(
+            (name, Winner(players)) for name in SEGMENTS
+        )
+        for winner, theta in zip(winners.values(), self._segment_angles()):
+            x_widget, y_widget = self._from_radial(0.7, theta)
+            scene.addWidget(winner)
+            winner.move(x_widget, y_widget)
+        return winners
 
     def refresh(self, phase, players, balance):
         """Refresh the board."""
 
         # Update segment counts
         for segment, value in balance.items():
-            self.q_segments[segment].q_counters.setText(str(value))
+            self.counts[segment].setPlainText(str(value))
 
-        for segment in self.q_segments.values():
+        for winner in self.winners.values():
 
             # Update widget state based on the game phase
-            segment.q_player.setEnabled(phase == Phase.SCORING)
+            winner.setEnabled(phase == Phase.SCORING)
 
             # Update player options
-            segment.q_player.clear()
-            segment.q_player.addItems([None, *players])
-            segment.q_player.setCurrentIndex(0)
+            winner.clear()
+            winner.set_options(players)
+            winner.setCurrentIndex(0)
 
         self.update()

@@ -78,9 +78,9 @@ class TableView(QGroupBox):
 
         # Log scores and update views
         self.scorer.log_round(
-            {name: seg.q_player.currentText()
-             for name, seg in self.q_board.q_segments.items()},
-            {p.name: p.cards for p in self.q_players}
+            {name: winner.currentText()
+             for name, winner in self.q_board.winners.items()},
+            {p.name: p.cards_left for p in self.q_players}
         )
         self.refresh_display()
 

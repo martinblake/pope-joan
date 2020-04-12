@@ -28,22 +28,22 @@ class Player(QGroupBox):
 
         layout = QFormLayout()
 
-        self.q_counters = QLabel("")
-        layout.addRow("Count:", self.q_counters)
+        self.count = QLabel("")
+        layout.addRow("Count:", self.count)
 
-        self.q_cards = QLineEdit()
-        self.q_cards.setValidator(QIntValidator())
-        layout.addRow("Cards:", self.q_cards)
+        self.cards = QLineEdit()
+        self.cards.setValidator(QIntValidator())
+        layout.addRow("Cards:", self.cards)
 
-        self.buttons = QHBoxLayout()
-        self.q_dress = QPushButton("Dress")
-        self.q_dress.clicked.connect(partial(dress_cb, self))
-        self.q_drop = QPushButton("Go Out")
-        self.q_drop.clicked.connect(partial(drop_cb, self))
-        self.q_drop.hide()
-        self.buttons.addWidget(self.q_dress)
-        self.buttons.addWidget(self.q_drop)
-        layout.setLayout(2, QFormLayout.SpanningRole, self.buttons)
+        self.dress = QPushButton("Dress")
+        self.dress.clicked.connect(partial(dress_cb, self))
+        self.drop = QPushButton("Go Out")
+        self.drop.clicked.connect(partial(drop_cb, self))
+        self.drop.hide()
+        buttons = QHBoxLayout()
+        buttons.addWidget(self.dress)
+        buttons.addWidget(self.drop)
+        layout.setLayout(2, QFormLayout.SpanningRole, buttons)
 
         self.setLayout(layout)
 
@@ -57,16 +57,16 @@ class Player(QGroupBox):
         """Refresh the widget based on the game state."""
 
         # Update player scores
-        self.q_counters.setText(str(balance))
+        self.count.setText(str(balance))
 
         # Clear card counts
-        self.q_cards.setText("")
+        self.cards.setText("")
 
         # Update widget state based on the game phase
         self.setEnabled(is_in_game)
-        self.q_dress.setEnabled(is_dresser and (phase == Phase.DRESSING))
-        self.q_drop.setEnabled(is_dresser and (phase == Phase.DRESSING))
-        self.q_cards.setEnabled(phase == Phase.SCORING)
+        self.dress.setEnabled(is_dresser and (phase == Phase.DRESSING))
+        self.drop.setEnabled(is_dresser and (phase == Phase.DRESSING))
+        self.cards.setEnabled(phase == Phase.SCORING)
         can_dress = balance >= dress_value()
         self.set_color(
             Qt.lightGray if not is_in_game
@@ -75,15 +75,15 @@ class Player(QGroupBox):
                   else Qt.yellow)
         )
         if can_dress:
-            self.q_drop.hide()
+            self.drop.hide()
         else:
-            self.q_drop.show()
+            self.drop.show()
 
     @property
-    def cards(self):
+    def cards_left(self):
         """Get the number of cards remaining."""
         try:
-            return int(self.q_cards.text())
+            return int(self.cards.text())
         except ValueError:
             return 0
 
@@ -98,10 +98,10 @@ class PlayerPanel(QWidget):
         super().__init__()
         layout = QGridLayout()
 
-        self.q_players = {}
+        self.players = {}
         for i, name in enumerate(players):
             player = Player(name, dress_cb, drop_cb)
-            self.q_players[name] = player
+            self.players[name] = player
             row = 2 * (i % self.N_ROWS)
             col = (i // self.N_ROWS)
             layout.addWidget(player, row, col)
@@ -111,16 +111,16 @@ class PlayerPanel(QWidget):
 
     def __getitem__(self, key):
         """Return the requested player widget."""
-        return self.q_players[key]
+        return self.players[key]
 
     def __iter__(self):
         """Return iterator through player widgets."""
-        return iter(self.q_players.values())
+        return iter(self.players.values())
 
     def refresh(self, phase, players, dresser, balance):
         """Refresh the player score displays based on the game state."""
 
-        for name, player in self.q_players.items():
+        for name, player in self.players.items():
             player.refresh(phase,
                            name in players,
                            name == dresser,
