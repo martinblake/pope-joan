@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QMainWindow,
     QPushButton,
+    QStyleFactory,
     QWidget,
 )
 
@@ -106,6 +107,7 @@ class TableView(QWidget):
 
 if __name__ == '__main__':
     App = QApplication(sys.argv)
+    App.setStyle("Fusion")
     config = ConfigView()
     if config.exec_() == QDialog.Accepted:
         window = Window(config.starting_value, config.player_list)
