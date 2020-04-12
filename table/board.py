@@ -13,7 +13,6 @@ from PyQt5.QtWidgets import (
 )
 
 from table.scorer import Phase, SEGMENTS
-from table.style import adjust_font
 
 
 class Segment(QGroupBox):
@@ -25,16 +24,15 @@ class Segment(QGroupBox):
         players.
         """
         super().__init__(name)
-        adjust_font(self, size=10, bold=True)
         self.setAlignment(Qt.AlignCenter)
         self.dress_value = dress_value
 
         grid = QGridLayout(self)
-        grid.addWidget(adjust_font(QLabel("Count:")), 0, 0)
-        grid.addWidget(adjust_font(QLabel("Player:")), 1, 0)
+        grid.addWidget(QLabel("Count:"), 0, 0)
+        grid.addWidget(QLabel("Player:"), 1, 0)
 
-        self.q_counters = adjust_font(QLabel(""), bold=True)
-        self.q_player = adjust_font(QComboBox())
+        self.q_counters = QLabel("")
+        self.q_player = QComboBox()
         self.q_player.addItems([None, *players])
         grid.addWidget(self.q_counters, 0, 1)
         grid.addWidget(self.q_player, 1, 1)

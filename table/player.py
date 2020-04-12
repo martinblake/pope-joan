@@ -4,8 +4,10 @@ from functools import partial
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import (
+    QFormLayout,
     QGroupBox,
     QGridLayout,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -13,55 +15,37 @@ from PyQt5.QtWidgets import (
 )
 
 from table.scorer import Phase, dress_value
-from table.style import adjust_font
 
 
 class Player(QGroupBox):
     """A widget for managing player info."""
 
-    HEIGHT = 130
-    WIDTH = 150
-
     def __init__(self, name, dress_cb, drop_cb):
         """Initialise with name and a callback for board dressing."""
         super().__init__(name)
         self.name = name
-        adjust_font(self, size=10, bold=True)
         self.setAlignment(Qt.AlignCenter)
 
-        self.layout = QGridLayout()
-        self._set_geometry(self.layout)
+        layout = QFormLayout()
 
-        self.q_counters = adjust_font(QLabel(""), bold=True)
-        self.layout.addWidget(adjust_font(QLabel("Count:"), size=8), 0, 0)
-        self.layout.addWidget(self.q_counters, 0, 1)
+        self.q_counters = QLabel("")
+        layout.addRow("Count:", self.q_counters)
 
-        self.q_cards = adjust_font(QLineEdit())
+        self.q_cards = QLineEdit()
         self.q_cards.setValidator(QIntValidator())
-        self.layout.addWidget(adjust_font(QLabel("Cards:"), size=8), 1, 0)
-        self.layout.addWidget(self.q_cards, 1, 1)
+        layout.addRow("Cards:", self.q_cards)
 
-        self.q_dress = adjust_font(QPushButton("Dress"))
+        self.buttons = QHBoxLayout()
+        self.q_dress = QPushButton("Dress")
         self.q_dress.clicked.connect(partial(dress_cb, self))
-        self.layout.addWidget(self.q_dress, 2, 0, 1, 2)
-
-        self.q_drop = adjust_font(QPushButton("Go Out"))
-        self.layout.addWidget(self.q_drop, 2, 1)
+        self.q_drop = QPushButton("Go Out")
         self.q_drop.clicked.connect(partial(drop_cb, self))
         self.q_drop.hide()
+        self.buttons.addWidget(self.q_dress)
+        self.buttons.addWidget(self.q_drop)
+        layout.setLayout(2, QFormLayout.SpanningRole, self.buttons)
 
-        self.setLayout(self.layout)
-
-    def _set_geometry(self, layout):
-        """Set the widget dimensions."""
-        self.setMinimumHeight(self.HEIGHT)
-        self.setMaximumHeight(self.HEIGHT)
-        self.setMinimumWidth(self.WIDTH)
-        self.setMaximumWidth(self.WIDTH)
-        for col in range(2):
-            layout.setColumnMinimumWidth(col, self.WIDTH / 2)
-        for row in range(3):
-            layout.setRowMinimumHeight(row, self.HEIGHT / 3)
+        self.setLayout(layout)
 
     def set_color(self, color):
         """Set the color palette."""
@@ -91,10 +75,8 @@ class Player(QGroupBox):
                   else Qt.yellow)
         )
         if can_dress:
-            self.layout.addWidget(self.q_dress, 2, 0, 1, 2)
             self.q_drop.hide()
         else:
-            self.layout.addWidget(self.q_dress, 2, 0)
             self.q_drop.show()
 
     @property
@@ -120,7 +102,10 @@ class PlayerPanel(QWidget):
         for i, name in enumerate(players):
             player = Player(name, dress_cb, drop_cb)
             self.q_players[name] = player
-            layout.addWidget(player, i % self.N_ROWS, i // self.N_ROWS)
+            row = 2 * (i % self.N_ROWS)
+            col = (i // self.N_ROWS)
+            layout.addWidget(player, row, col)
+            layout.setRowStretch(row + 1, 1)
 
         self.setLayout(layout)
 
