@@ -1,6 +1,7 @@
 """Entry point for the application."""
 import sys
 
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
@@ -13,6 +14,7 @@ from PyQt5.QtWidgets import (
 from table.board import Board
 from table.config import ConfigView
 from table.player import PlayerPanel
+from table.resources import icon_file
 from table.scorer import Scorer
 
 
@@ -23,6 +25,7 @@ class Window(QMainWindow):
         """Initialise the window."""
         super().__init__()
         self.setWindowTitle("Pope Joan")
+        self.setWindowIcon(QIcon(icon_file()))
 
         self.setCentralWidget(
             TableView(starting_value, players)
@@ -100,6 +103,7 @@ class TableView(QGroupBox):
 if __name__ == '__main__':
     App = QApplication(sys.argv)
     App.setStyle("Fusion")
+    App.setWindowIcon(QIcon(icon_file()))
     config = ConfigView()
     if config.exec_() == QDialog.Accepted:
         window = Window(config.starting_value, config.player_list)
