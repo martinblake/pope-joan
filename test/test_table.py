@@ -1,14 +1,11 @@
 import unittest
 from contextlib import contextmanager
 from copy import copy
-from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtTest import QTest
 
 from table.main import TableView
-
-App = QApplication([])
 
 TEST_PLAYERS = [f"Player{i}" for i in range(4)]
 ALL_SEGMENTS = ["Game", "Ace", "Jack", "Queen", "King",
@@ -87,9 +84,10 @@ class TableTest(unittest.TestCase):
                              Qt.LeftButton)
 
     def check_player_color(self, player, color):
-        """Check the window colour for the given player's view."""
+        """Check the window colour for the given player's buttons."""
         player = self.table.q_players[player]
-        self.assertEqual(color, player.palette().color(QPalette.Window))
+        self.assertEqual(color, player.dress.palette().color(QPalette.Window))
+        self.assertEqual(color, player.drop.palette().color(QPalette.Window))
 
     def check_failed_board_dress(self, player_name):
         """Check that the given player cannot dress the board."""
@@ -101,6 +99,12 @@ class TableTest(unittest.TestCase):
         with self.assert_count_changes(expected_count_changes):
             QTest.mouseClick(self.table.q_players[player_name].dress,
                              Qt.LeftButton)
+
+    def check_player_bold_italic(self, player, expected):
+        """Return whether the given player is in italic text."""
+        font = self.table.q_players.players[player].font()
+        self.assertEqual(expected, font.bold())
+        self.assertEqual(expected, font.italic())
 
     def test_initialisation(self):
         """Test the initial state of the table."""
@@ -221,9 +225,9 @@ class TableTest(unittest.TestCase):
         with self.assert_count_changes(expected_changes):
             QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
 
-    def test_dresser_highlights(self):
+    def test_dresser_color(self):
         """
-        Test highlighting based on whether players are expected to or are
+        Test changing colour based on whether players are expected to or are
         able to dress the board.
         """
 
@@ -234,9 +238,9 @@ class TableTest(unittest.TestCase):
         QTest.mouseClick(self.table.q_players["Player1"].drop, Qt.LeftButton)
         self.check_player_color("Player0", Qt.green)
 
-        # Player 0 is still indicated as the dresser even after dressing
+        # Player 0 has finished dressing
         self.finish_dress()
-        self.check_player_color("Player0", Qt.green)
+        self.check_player_color("Player0", Qt.darkGray)
 
         # Players 1 and 2 are drained of counters
         self.mock_cards_left("Player1", 40)
@@ -264,6 +268,7 @@ class TableTest(unittest.TestCase):
         self.assertLess(
             int(self.table.q_players["Player2"].count.text()), 0
         )
+        self.check_player_color("Player2", Qt.yellow)
 
         # Player 3 has enough to dress once...
         self.mock_cards_left("Player3", 30)
@@ -273,3 +278,18 @@ class TableTest(unittest.TestCase):
         # ...but will then be below the limit
         self.finish_dress()
         self.check_player_color("Player3", Qt.yellow)
+
+    def test_dresser_indicator(self):
+        """Test displaying the dresser in bold and italics."""
+
+        # Player 0 is the initial dresser
+        self.check_player_bold_italic("Player0", True)
+
+        # Player 0 is still indicated as the dresser even after dressing
+        self.finish_dress()
+        self.check_player_bold_italic("Player0", True)
+
+        # Player 1 is then the dresser
+        self.finish_round()
+        self.check_player_bold_italic("Player0", False)
+        self.check_player_bold_italic("Player1", True)

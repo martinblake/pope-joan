@@ -1,11 +1,9 @@
 import unittest
 from PyQt5.QtCore import Qt
 from PyQt5.QtTest import QTest
-from PyQt5.QtWidgets import QApplication, QDialog
+from PyQt5.QtWidgets import QDialog
 
 from table.config import ConfigView
-
-App = QApplication([])
 
 
 class TestConfig(unittest.TestCase):

@@ -1,7 +1,4 @@
 """Management of the board display."""
-import os
-import sys
-
 import numpy as np
 from collections import OrderedDict
 

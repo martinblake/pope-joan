@@ -2,7 +2,7 @@
 from functools import partial
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtGui import QIntValidator, QPalette, QColor
 from PyQt5.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -49,9 +49,11 @@ class Player(QGroupBox):
 
     def set_color(self, color):
         """Set the color palette."""
-        pal = self.palette()
-        pal.setColor(self.backgroundRole(), color)
-        self.setPalette(pal)
+        for button in (self.dress, self.drop):
+            pal = button.palette()
+            pal.setColor(self.backgroundRole(), color)
+            pal.setColor(QPalette.ButtonText, QColor(color).darker())
+            button.setPalette(pal)
 
     def refresh(self, phase, is_in_game, is_dresser, balance):
         """Refresh the widget based on the game state."""
@@ -70,7 +72,8 @@ class Player(QGroupBox):
         can_dress = balance >= dress_value()
         self.set_color(
             Qt.lightGray if not is_in_game
-            else (Qt.green if is_dresser else Qt.darkGray) if can_dress
+            else (Qt.green if is_dresser and (phase == Phase.DRESSING)
+                  else Qt.darkGray) if can_dress
             else (Qt.red if is_dresser and (phase == Phase.DRESSING)
                   else Qt.yellow)
         )
@@ -78,6 +81,11 @@ class Player(QGroupBox):
             self.drop.hide()
         else:
             self.drop.show()
+
+        font = self.font()
+        font.setBold(is_dresser)
+        font.setItalic(is_dresser)
+        self.setFont(font)
 
     @property
     def cards_left(self):
