@@ -50,10 +50,20 @@ class Player(QGroupBox):
     def set_color(self, color):
         """Set the color palette."""
         for button in (self.dress, self.drop):
+            col = QColor(color)
+            if not button.isEnabled():
+                col.setAlpha(150)
             pal = button.palette()
-            pal.setColor(self.backgroundRole(), color)
-            pal.setColor(QPalette.ButtonText, QColor(color).darker())
+            pal.setColor(self.backgroundRole(), col)
+            pal.setColor(QPalette.ButtonText, col.darker())
             button.setPalette(pal)
+
+    def set_bold_italic(self, bold_italic):
+        """Set whether the font should be both bold and italic or not."""
+        font = self.font()
+        font.setBold(bold_italic)
+        font.setItalic(bold_italic)
+        self.setFont(font)
 
     def refresh(self, phase, is_in_game, is_dresser, balance):
         """Refresh the widget based on the game state."""
@@ -64,28 +74,35 @@ class Player(QGroupBox):
         # Clear card counts
         self.cards.setText("")
 
-        # Update widget state based on the game phase
-        self.setEnabled(is_in_game)
-        self.dress.setEnabled(is_dresser and (phase == Phase.DRESSING))
-        self.drop.setEnabled(is_dresser and (phase == Phase.DRESSING))
-        self.cards.setEnabled(phase == Phase.SCORING)
-        can_dress = balance >= dress_value()
-        self.set_color(
-            Qt.lightGray if not is_in_game
-            else (Qt.green if is_dresser and (phase == Phase.DRESSING)
-                  else Qt.darkGray) if can_dress
-            else (Qt.red if is_dresser and (phase == Phase.DRESSING)
-                  else Qt.yellow)
-        )
-        if can_dress:
-            self.drop.hide()
-        else:
-            self.drop.show()
+        # Deduce other flags
+        must_dress = is_dresser and (phase == Phase.DRESSING)
+        cannot_dress = balance < dress_value()
+        out_of_counters = (must_dress and cannot_dress) or (balance < 0)
 
-        font = self.font()
-        font.setBold(is_dresser)
-        font.setItalic(is_dresser)
-        self.setFont(font)
+        # Update widget availability based on the game state
+        self.setEnabled(is_in_game)
+        self.cards.setEnabled(phase == Phase.SCORING)
+        self.dress.setEnabled(must_dress)
+        self.drop.setEnabled(out_of_counters)
+        if out_of_counters:
+            self.drop.show()
+        else:
+            self.drop.hide()
+
+        # Update colour based on game state
+        if not is_in_game:
+            self.set_color(Qt.lightGray)
+        elif out_of_counters:
+            self.set_color(Qt.red)
+        elif cannot_dress:
+            self.set_color(Qt.yellow)
+        elif must_dress:
+            self.set_color(Qt.green)
+        else:
+            self.set_color(Qt.darkGray)
+
+        # Update font based on whether the player is the dresser
+        self.set_bold_italic(is_dresser)
 
     @property
     def cards_left(self):

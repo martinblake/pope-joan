@@ -43,20 +43,24 @@ class Scorer:
         self.round = 1
         self.phase = Phase.DRESSING
         self.players = players
-        self.dresser_idx = 0
+        self.dresser = players[0]
         self.balance = Balance(
             segments={s: 0 for s in SEGMENTS},
             players={p: starting_value for p in self.players},
         )
+
+    def _advance_dresser(self):
+        """Move on to the next dresser."""
+        self.dresser = self.players[
+            (self.players.index(self.dresser) + 1) % len(self.players)
+        ]
 
     def _advance(self):
         """Proceed to the next round/phase."""
         self.phase = self.phase.next()
         if self.phase == Phase.DRESSING:
             self.round += 1
-            self.dresser_idx += 1
-            if self.dresser_idx >= len(self.players):
-                self.dresser_idx = 0
+            self._advance_dresser()
 
     def log_dress(self, player):
         """Log a player dressing the board."""
@@ -81,13 +85,9 @@ class Scorer:
         """Return a title for displaying round and phase."""
         return f"Round {self.round} - {self.phase.name.title()}"
 
-    @property
-    def dresser(self):
-        """Return the current board dresser."""
-        return self.players[self.dresser_idx]
-
     def drop(self, player):
         """Remove the given player from the game."""
-        self.players.remove(player)
-        if self.dresser_idx >= len(self.players):
-            self.dresser_idx = 0
+        if len(self.players) > 1:
+            if player == self.dresser:
+                self._advance_dresser()
+            self.players.remove(player)

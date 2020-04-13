@@ -83,11 +83,14 @@ class TableTest(unittest.TestCase):
             QTest.mouseClick(self.table.q_players[player_name].dress,
                              Qt.LeftButton)
 
-    def check_player_color(self, player, color):
+    def check_player_color(self, player, expected):
         """Check the window colour for the given player's buttons."""
         player = self.table.q_players[player]
-        self.assertEqual(color, player.dress.palette().color(QPalette.Window))
-        self.assertEqual(color, player.drop.palette().color(QPalette.Window))
+        for button in (player.dress, player.drop):
+            color = player.dress.palette().color(QPalette.Window)
+            # Alpha depends on isEnabled, which we're not testing here
+            color.setAlpha(255)
+            self.assertEqual(expected, color)
 
     def check_failed_board_dress(self, player_name):
         """Check that the given player cannot dress the board."""
@@ -102,7 +105,7 @@ class TableTest(unittest.TestCase):
 
     def check_player_bold_italic(self, player, expected):
         """Return whether the given player is in italic text."""
-        font = self.table.q_players.players[player].font()
+        font = self.table.q_players[player].font()
         self.assertEqual(expected, font.bold())
         self.assertEqual(expected, font.italic())
 
@@ -203,7 +206,7 @@ class TableTest(unittest.TestCase):
         # Drain player 1 of counters in first round
         self.finish_dress()
         self.mock_cards_left("Player1", 45)
-        self.mock_segment_win("Player0", "Game")
+        self.mock_segment_win("Player2", "Game")
         QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
 
         # Player 1 drops out
@@ -220,10 +223,24 @@ class TableTest(unittest.TestCase):
 
         # Player 1 can no longer lose cards
         self.mock_cards_left("Player1", 5)
-        self.mock_segment_win("Player0", "Game")
-        expected_changes = {"Player0": 1, "Game": -1}
+        self.mock_cards_left("Player0", 50)
+        self.mock_segment_win("Player3", "Game")
+        expected_changes = {"Player0": -50, "Player3": 51, "Game": -1}
         with self.assert_count_changes(expected_changes):
             QTest.mouseClick(self.table.q_end_round, Qt.LeftButton)
+
+        # Meanwhile, player 0 has gone negative, so can also drop out,
+        # even though they're not dressing
+        QTest.mouseClick(self.table.q_players["Player0"].drop, Qt.LeftButton)
+
+        # This doesn't interrupt the dresser cycle, i.e. it's still
+        # Player 3's turn
+        self.check_successful_board_dress("Player3")
+
+        # Player 0 also cannot win segments now
+        self.assertRaises(
+            ValueError, lambda: self.mock_segment_win("Player0", "Jack")
+        )
 
     def test_dresser_color(self):
         """
@@ -268,7 +285,7 @@ class TableTest(unittest.TestCase):
         self.assertLess(
             int(self.table.q_players["Player2"].count.text()), 0
         )
-        self.check_player_color("Player2", Qt.yellow)
+        self.check_player_color("Player2", Qt.red)
 
         # Player 3 has enough to dress once...
         self.mock_cards_left("Player3", 30)

@@ -22,7 +22,6 @@ Each round is organised into 2 phases:
 
 ## Priority 0
 
-* Go out button when negative is lit up and active
 * Release v1
 
 ## Priority 1
