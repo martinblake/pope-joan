@@ -22,11 +22,15 @@ Each round is organised into 2 phases:
 
 ## Priority 0
 
-* Compile to executable
-* Card dealer
+* Ability to go out whenever on right click
+* Go out button when negative is lit up and active
+* Boldness of player colour
+* Independent dressing indicator
+* Release v1
 
 ## Priority 1
 
+* Card dealer
 * Record history with undo/reset options
 
 ## Priority 2
