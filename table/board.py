@@ -1,4 +1,7 @@
 """Management of the board display."""
+import os
+import sys
+
 import numpy as np
 from collections import OrderedDict
 
@@ -8,6 +11,18 @@ from PyQt5.QtWidgets import QComboBox, QGraphicsScene, QGraphicsView
 
 
 from table.scorer import Phase, SEGMENTS
+
+
+def resource_dir():
+    """Return the path to the resources directory."""
+    root_dir = (getattr(sys, "_MEIPASS", os.path.abspath("."))
+                if getattr(sys, "frozen", False) else os.path.abspath("."))
+    return os.path.join(root_dir, "resources")
+
+
+def background_image_file():
+    """Return the path to the background image file."""
+    return os.path.join(resource_dir(), "wood_texture.jpg")
 
 
 class Winner(QComboBox):
@@ -109,7 +124,7 @@ class Board(QGraphicsView):
 
         ellipse = scene.addEllipse(0, 0, 2 * self.RADIUS, 2 * self.RADIUS)
         ellipse.setPen(QPen(QBrush(), 0))
-        ellipse.setBrush(QBrush(QImage("resources/wood_texture.jpg")))
+        ellipse.setBrush(QBrush(QImage(background_image_file())))
 
         # Add segment boundaries
         for theta in self._boundary_angles():
