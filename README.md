@@ -18,11 +18,15 @@ Each round is organised into 2 phases:
  * Scoring - Scores for the round are entered and submitted (no dressing allowed).
 
 
+# Compilation
+
+Compile using Pyinstaller as follows:
+```
+pyinstaller build.spec --onefile -w
+```
+
+
 # Feature Requests
-
-## Priority 0
-
-* Release v1
 
 ## Priority 1
 
