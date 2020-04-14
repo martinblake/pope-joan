@@ -1,2 +1,2 @@
-from PyQt5.QtWidgets import QApplication, QDialog
+from PyQt5.QtWidgets import QApplication
 App = QApplication([])
